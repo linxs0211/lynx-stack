@@ -164,6 +164,12 @@ Run commands from the repository root. Follow the root `AGENTS.md` build order:
 install frozen dependencies when they may be stale, then run the full Turbo
 build before tests. Package-local builds do not replace this validation.
 
+After a full Turbo build while the dev server is running, check its latest
+compilation result. Dependency builds can temporarily remove `dist` entries,
+leaving cached module-resolution errors in the dev server after those entries
+return. Restart the affected dev server once the build succeeds, then verify
+successful compilation; an HTTP 200 response alone does not prove it is ready.
+
 ```bash
 # Dependencies, when stale
 pnpm install --frozen-lockfile

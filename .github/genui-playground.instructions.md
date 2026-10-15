@@ -14,6 +14,12 @@ When streaming test fixtures split a word into chunks, derive typo-prone fragmen
 
 ## Runtime Boundaries
 
+When a full Turbo build runs alongside Playground development, dependency
+builds may temporarily remove `dist` entry points and leave cached resolution
+errors in the dev server. After the build succeeds, check the latest compilation
+result and restart an affected dev server. Verify successful compilation rather
+than relying on the HTML entry returning HTTP 200.
+
 Keep standalone preview implementations under `src/render/`, with
 `index.tsx` selecting A2UI, OpenUI, MCP Apps, ReactLynx, or Lynx XML.
 Share query parsing, metrics, and bundled `<lynx-view>` lifecycle there, while
