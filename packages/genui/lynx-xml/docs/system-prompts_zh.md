@@ -30,7 +30,7 @@ const prompt = buildLynxXmlSystemPrompt({
 | 选项                 | 默认值  | 用途                                                       |
 | -------------------- | ------- | ---------------------------------------------------------- |
 | `engineVersion`      | `'4.2'` | 生成产物根节点中的目标引擎版本，接受点分数字格式。         |
-| `enableHtmlFragment` | `false` | 生成包含一个初始元素树 `<template>` 的中间产物。           |
+| `enableHtmlFragment` | `false` | 生成保留初始元素树 `<template>` 的产物，由客户端解析。     |
 | `enableScriptReuse`  | `false` | 生成 `definePage` 回调，转换时补充公共生命周期和事件逻辑。 |
 | `stylePreset`        | 关闭    | 设为 `'default'` 时描述内置 Lynx 工具类。                  |
 | `appendix`           | 无      | 去除首尾空白后追加业务指令。                               |
@@ -69,7 +69,7 @@ const artifact = normalizeLynxXmlArtifact(text);
 | -------------------------------------- | --------------------------------------------------------- |
 | `LYNX_XML_SYSTEM_PROMPT`               | 默认选项下的预构建 Direct Prompt。                        |
 | `LYNX_XML_HTML_FRAGMENT_SYSTEM_PROMPT` | 预构建 Template Prompt，关闭 ScriptReuse 和 StylePreset。 |
-| `LYNX_XML_HTML_FRAGMENT_INSTRUCTIONS`  | Template 模式的中间源码契约。                             |
+| `LYNX_XML_HTML_FRAGMENT_INSTRUCTIONS`  | Template 模式保留 UI 标签并由客户端解析的源码契约。       |
 
 请求间选项不同时优先使用 `buildLynxXmlSystemPrompt`。通过 appendix 追加业务
 策略时，应保留转换器要求的产物、生命周期和布局契约。

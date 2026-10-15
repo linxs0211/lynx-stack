@@ -3,7 +3,7 @@
 [English](./README.md) | 简体中文
 
 `@lynx-js/genui/lynx-xml` 为完整、零构建的 `.lynxml` 产物提供 System Prompt、
-确定性转换，以及产物提取、规范化和校验能力。模型使用 Vanilla Lynx 和 Element PAPI 生成 UI，
+确定性转换，以及产物提取、规范化和校验能力。模型使用 Vanilla Lynx 的 Template 标签或 Direct Element PAPI 生成 UI，
 也可以启用 Template、ScriptReuse 和 StylePreset 转换。
 
 这是一个 headless 包。业务负责模型调用、流式传输、产物存储和 Lynx XML 渲染。
@@ -59,8 +59,10 @@ const { text } = assembleLynxXmlArtifact(modelOutput, options);
 const artifact = normalizeLynxXmlArtifact(text);
 ```
 
-Template 和 ScriptReuse 输出属于中间契约，预览或交付前必须完成转换。转换过程
-是确定性的，不执行模型代码，也无需额外调用模型。包 API 默认关闭这三个选项。
+组装后保留 `<template>` 和其中的 UI 标签，同时补齐启用的脚本与样式辅助逻辑。
+客户端提供 `createFragment(page, pageId)`，解析并追加初始树，返回显式 id 到节点的映射。
+不支持模板解析的运行时可在加载前本地调用 `compileLynxXmlFragment(artifact)`；
+存储和交付仍使用保留标签的组装产物。组装不执行模型代码，也无需额外调用模型。包 API 默认关闭这三个选项。
 
 ## 文档目录
 

@@ -27,8 +27,8 @@ describe('PreviewPanel QR cards', () => {
     ]);
     expect(cards.every(({ item }) => item.url === undefined)).toBe(true);
     expect(cards.map(({ item }) => item.placeholder)).toEqual([
-      'QR unavailable for local edits',
-      'QR unavailable for local edits',
+      'XML URL unavailable',
+      'XML URL unavailable',
     ]);
   });
 

@@ -37,7 +37,8 @@ const parser = new XMLParser({
 interface GeneratorState {
   bindings: Map<string, string>;
   classNames: Set<string>;
-  lines: string[];
+  lines: string[] | undefined;
+  hasContent: boolean;
 }
 
 export interface GeneratedMainThreadScript {
@@ -74,15 +75,16 @@ function appendText(
   state: GeneratorState,
 ): void {
   if (!text.trim()) return;
+  state.hasContent = true;
 
   if (parentTagName === 'text') {
-    state.lines.push(
+    state.lines?.push(
       `__AppendElement(${parent}, __CreateRawText(${javascriptString(text)}));`,
     );
     return;
   }
 
-  state.lines.push(
+  state.lines?.push(
     'element = __CreateText(pageId);',
     `__AppendElement(element, __CreateRawText(${javascriptString(text)}));`,
     `__AppendElement(${parent}, element);`,
@@ -101,7 +103,7 @@ function appendAttribute(
     for (const className of String(rawValue).split(/\s+/u)) {
       if (className) state.classNames.add(className);
     }
-    state.lines.push(`__SetClasses(${node}, ${value});`);
+    state.lines?.push(`__SetClasses(${node}, ${value});`);
   } else if (name === 'id') {
     const bindingName = String(rawValue);
     if (state.bindings.has(bindingName)) {
@@ -109,15 +111,15 @@ function appendAttribute(
     }
     const reference = `nodeMap[${value}]`;
     state.bindings.set(bindingName, reference);
-    state.lines.push(`${reference} = ${node};`, `__SetID(${node}, ${value});`);
+    state.lines?.push(`${reference} = ${node};`, `__SetID(${node}, ${value});`);
   } else if (name === 'style') {
-    state.lines.push(`__SetInlineStyles(${node}, ${value});`);
+    state.lines?.push(`__SetInlineStyles(${node}, ${value});`);
   } else if (name.startsWith('data-') && name.length > 5) {
-    state.lines.push(
+    state.lines?.push(
       `__AddDataset(${node}, ${javascriptString(name.slice(5))}, ${value});`,
     );
   } else {
-    state.lines.push(
+    state.lines?.push(
       `__SetAttribute(${node}, ${javascriptString(name)}, ${value});`,
     );
   }
@@ -159,19 +161,20 @@ function appendRawText(
       `XML raw-text does not support attribute "${unsupported}"; put styling and events on its parent text element`,
     );
   }
+  state.hasContent = true;
   if (parentTagName !== 'text') {
-    state.lines.push(
+    state.lines?.push(
       'element = __CreateText(pageId);',
       `__AppendElement(${parent}, element);`,
       'parents.push(element);',
     );
   }
-  state.lines.push(`element = __CreateRawText(${javascriptString(text)});`);
+  state.lines?.push(`element = __CreateRawText(${javascriptString(text)});`);
   if (Object.hasOwn(attributes, 'id')) {
     appendAttribute('element', 'id', attributes['id'], state);
   }
-  state.lines.push(`__AppendElement(parents[parents.length - 1], element);`);
-  if (parentTagName !== 'text') state.lines.push('parents.pop();');
+  state.lines?.push(`__AppendElement(parents[parents.length - 1], element);`);
+  if (parentTagName !== 'text') state.lines?.push('parents.pop();');
 }
 
 /** Emit one parsed XML node and its depth-bounded descendants. */
@@ -224,7 +227,8 @@ function appendParsedNode(
   }
 
   const node = 'element';
-  state.lines.push(`${node} = ${createElementExpression(tagName)};`);
+  state.hasContent = true;
+  state.lines?.push(`${node} = ${createElementExpression(tagName)};`);
 
   if (attributes && typeof attributes === 'object') {
     for (const [name, value] of Object.entries(attributes)) {
@@ -232,7 +236,7 @@ function appendParsedNode(
     }
   }
 
-  state.lines.push(
+  state.lines?.push(
     `__AppendElement(${parent}, ${node});`,
     `parents.push(${node});`,
   );
@@ -248,13 +252,13 @@ function appendParsedNode(
       depth + 1,
     );
   }
-  state.lines.push('parents.pop();');
+  state.lines?.push('parents.pop();');
 }
 
-/** Generate Element PAPI calls and stable id-to-node bindings. */
-export function generateMainThreadScriptResult(
+function inspectFragment(
   xmlFragment: string,
-): GeneratedMainThreadScript {
+  generateJavaScript: boolean,
+): GeneratorState {
   if (!xmlFragment.trim()) throw new Error('XML fragment must not be empty');
   if (xmlFragment.length > MAX_XML_FRAGMENT_LENGTH) {
     throw new Error(
@@ -281,7 +285,8 @@ export function generateMainThreadScriptResult(
   const state: GeneratorState = {
     bindings: new Map(),
     classNames: new Set(),
-    lines: [],
+    lines: generateJavaScript ? [] : undefined,
+    hasContent: false,
   };
   for (const child of children) {
     if (!child || typeof child !== 'object' || Array.isArray(child)) {
@@ -295,9 +300,24 @@ export function generateMainThreadScriptResult(
       1,
     );
   }
-  if (state.lines.length === 0) {
+  if (!state.hasContent) {
     throw new Error('XML fragment must contain visible content');
   }
+  return state;
+}
+
+/** Validate retained markup and collect its classes without generating JavaScript. @internal */
+export function inspectLynxXmlFragment(
+  xmlFragment: string,
+): { classNames: string[] } {
+  return { classNames: [...inspectFragment(xmlFragment, false).classNames] };
+}
+
+/** Generate Element PAPI calls and stable id-to-node bindings. */
+export function generateMainThreadScriptResult(
+  xmlFragment: string,
+): GeneratedMainThreadScript {
+  const state = inspectFragment(xmlFragment, true);
   return {
     bindings: Object.fromEntries(state.bindings),
     classNames: [...state.classNames],
@@ -305,7 +325,7 @@ export function generateMainThreadScriptResult(
       'const nodeMap = Object.create(null);',
       'const parents = [page];',
       'let element;',
-      ...state.lines,
+      ...state.lines!,
     ].join('\n'),
   };
 }

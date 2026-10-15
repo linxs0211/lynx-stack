@@ -4,7 +4,7 @@ English | [简体中文](./README_zh.md)
 
 `@lynx-js/genui/lynx-xml` provides system prompts, deterministic transformation, and
 artifact extraction, normalization, and validation for complete, zero-build `.lynxml` artifacts. Models
-generate Vanilla Lynx UI using Element PAPI, with optional Template, ScriptReuse, and StylePreset transformations.
+generate Vanilla Lynx UI using retained Template tags or Direct Element PAPI, with optional ScriptReuse and StylePreset assembly.
 
 The package is headless. Your application owns model calls, streaming, artifact
 storage, and a Lynx XML renderer. Generated artifacts contain executable
@@ -62,9 +62,12 @@ const { text } = assembleLynxXmlArtifact(modelOutput, options);
 const artifact = normalizeLynxXmlArtifact(text);
 ```
 
-Template and ScriptReuse output is an intermediate contract. Transform it before
-preview or delivery. Transformation is deterministic, executes no model code, and
-requires no additional model call. All three options are disabled by default
+Assembly preserves `<template>` and its UI tags while adding enabled script and
+style helpers. The client supplies `createFragment(page, pageId)` to append the
+parsed tree and return its explicit id-to-node map. For a runtime without template
+parsing, call `compileLynxXmlFragment(artifact)` locally before rendering; retain
+the assembled artifact for storage and delivery. Assembly executes no model code
+and requires no additional model call. All three options are disabled by default
 at the package API level.
 
 ## Documentation

@@ -6,7 +6,10 @@ import { parse } from 'acorn';
 import { simple } from 'acorn-walk';
 import { analyze } from 'eslint-scope';
 
-import { generateMainThreadScriptResult } from './html-fragment.js';
+import {
+  generateMainThreadScriptResult,
+  inspectLynxXmlFragment,
+} from './html-fragment.js';
 import { extractLynxXmlArtifact } from './output.js';
 import { generateSharedScript } from './script-reuse.js';
 import { generatePresetStyles, validateStylePreset } from './style-preset.js';
@@ -29,13 +32,13 @@ export interface AssembleLynxXmlArtifactOptions
   extends CompileLynxXmlFragmentOptions
 {
   /**
-   * Compile a root-child template into Element PAPI.
+   * Preserve and validate a root-child template for client-side parsing.
    * @defaultValue false
    */
   enableHtmlFragment?: boolean | undefined;
 }
 
-/** Assemble enabled template, script, and style features without executing model code. */
+/** Assemble scripts and styles while preserving template UI tags for client-side parsing. */
 export function assembleLynxXmlArtifact(
   source: string,
   options: AssembleLynxXmlArtifactOptions = {},
@@ -47,7 +50,7 @@ export function assembleLynxXmlArtifact(
   );
 }
 
-/** Compile the model's intermediate document without executing model code. */
+/** Compile template UI tags into Element PAPI for a runtime that does not parse templates. */
 export function compileLynxXmlFragment(
   source: string,
   options: CompileLynxXmlFragmentOptions = {},
@@ -55,7 +58,7 @@ export function compileLynxXmlFragment(
   text: string;
   xmlFragment: string;
 } {
-  const result = transformLynxXmlArtifact(source, true, options);
+  const result = transformLynxXmlArtifact(source, true, options, true);
   return { text: result.text, xmlFragment: result.xmlFragment! };
 }
 
@@ -71,6 +74,7 @@ function transformLynxXmlArtifact(
   source: string,
   enableTemplate: boolean,
   options: CompileLynxXmlFragmentOptions,
+  compileTemplate = false,
 ): { text: string; xmlFragment?: string } {
   validateStylePreset(options.stylePreset);
   const root = /^\s*<!doctype lynx>\s*<lynx\b[^>]*>/u.exec(source);
@@ -146,10 +150,13 @@ function transformLynxXmlArtifact(
       'Enable Template to compile a document containing <template>',
     );
   }
-  const generated = xmlFragment === undefined
+  const generated = compileTemplate && xmlFragment !== undefined
+    ? generateMainThreadScriptResult(xmlFragment)
+    : undefined;
+  const fragment = generated ?? (xmlFragment === undefined
     ? undefined
-    : generateMainThreadScriptResult(xmlFragment);
-  const classNames = new Set(generated?.classNames);
+    : inspectLynxXmlFragment(xmlFragment));
+  const classNames = new Set(fragment?.classNames);
 
   const javascript = source.slice(mainStart, mainEnd);
   const ast = parse(javascript, {
@@ -164,7 +171,7 @@ function transformLynxXmlArtifact(
       && scopes.scopes.some(scope => scope.set.has('createFragment'))
     ) {
       throw new Error(
-        'createFragment is provided by the server and must not be declared or shadowed',
+        'createFragment is provided by the client and must not be declared or shadowed',
       );
     }
     if (
@@ -304,7 +311,7 @@ function transformLynxXmlArtifact(
     edits.push({
       start: mainEnd,
       end: mainEnd,
-      text: generateSharedScript(false),
+      text: generateSharedScript(enableTemplate),
     });
   }
   const presetCss = [

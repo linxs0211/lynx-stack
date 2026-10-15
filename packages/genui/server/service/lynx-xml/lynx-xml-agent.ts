@@ -80,7 +80,7 @@ function buildLynxXmlScopedRunOptions(
   };
 }
 
-function compileGeneration(
+function assembleGeneration(
   result: { text: string; usage: unknown; finishReason: unknown },
   opts: LynxXmlChatOptions,
 ): { text: string; metadata: LynxXmlGenerationMetadata } {
@@ -251,7 +251,7 @@ export default class LynxXmlAgentService {
               settings?.maxOutputTokens,
             ),
           postprocess: result => {
-            const artifact = compileGeneration(result, opts);
+            const artifact = assembleGeneration(result, opts);
             return {
               ...artifact,
               text: normalizeLynxXmlArtifact(artifact.text),
@@ -291,7 +291,7 @@ export default class LynxXmlAgentService {
     const generated = await extractGenerationResult(result);
     return {
       ...generated,
-      ...compileGeneration(generated, opts),
+      ...assembleGeneration(generated, opts),
     };
   }
 }

@@ -11,6 +11,7 @@ import {
   DEFAULT_SCREENSHOT_SETTLE_MS,
   isScreenshotSettleMs,
 } from './benchScreenshotDelay.js';
+import { prepareLynxXmlRuntimeSource } from '../../utils/lynxXmlRuntime.js';
 
 const MAX_SCREENSHOT_BYTES = 10 * 1024 * 1024 + 1024;
 const MAX_CAPTURE_FORM_BYTES = 10 * 1024 * 1024;
@@ -60,7 +61,7 @@ function screenshotForm(
     if (request.source.length > MAX_CAPTURE_FORM_BYTES) {
       throw new Error('Screenshot request exceeds the 10 MiB form limit.');
     }
-    const source = strToU8(request.source);
+    const source = strToU8(prepareLynxXmlRuntimeSource(request.source));
     if (bytes + source.byteLength > MAX_CAPTURE_FORM_BYTES) {
       throw new Error('Screenshot request exceeds the 10 MiB form limit.');
     }

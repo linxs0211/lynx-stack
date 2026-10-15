@@ -11,6 +11,8 @@ import { defineConfig } from '@rsbuild/core';
 import type { RsbuildPlugin } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 
+import { normalizeLynxXmlArtifact } from '@lynx-js/genui/lynx-xml';
+
 import { resolveGenuiServerUrl } from './genui-server-url.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -25,31 +27,50 @@ const HAS_PHASE_TWO_SCREENSHOTS = existsSync(PHASE_TWO_SCREENSHOT_DIRECTORY)
 const CLIENT_PAYLOAD_STORE_ENABLED = process.env.NODE_ENV !== 'production'
   && process.env.A2UI_PLAYGROUND_CLIENT_PAYLOAD_PUBLISH !== '0';
 
-// In-memory A2UI payload store. Keeps the dev-bundle / render URLs short
-// enough to fit inside a scannable QR code.
+// In-memory development stores keep preview URLs short enough for QR codes.
 interface StoredPayload {
   messages?: unknown;
   actionMocks?: unknown;
   rawText?: string;
+  source?: string;
   createdAt: number;
 }
 const payloadStore = new Map<string, StoredPayload>();
+const lynxXmlPayloadStore = new Map<string, StoredPayload>();
+const MAX_LYNX_XML_PAYLOADS = 32;
+const MAX_LYNX_XML_BODY_BYTES = 2 * 1024 * 1024;
 const PAYLOAD_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 function gcPayloads(): void {
   const now = Date.now();
-  for (const [id, p] of payloadStore) {
-    if (now - p.createdAt > PAYLOAD_TTL_MS) {
-      payloadStore.delete(id);
+  for (const store of [payloadStore, lynxXmlPayloadStore]) {
+    for (const [id, p] of store) {
+      if (now - p.createdAt > PAYLOAD_TTL_MS) {
+        store.delete(id);
+      }
     }
   }
 }
 
-function readJsonBody(req: IncomingMessage): Promise<unknown> {
+function readJsonBody(
+  req: IncomingMessage,
+  maxBytes = Number.POSITIVE_INFINITY,
+): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (c: Buffer) => chunks.push(c));
+    let bytes = 0;
+    req.on('data', (c: Buffer) => {
+      if (bytes > maxBytes) return;
+      bytes += c.length;
+      if (bytes > maxBytes) {
+        chunks.length = 0;
+        reject(new Error('Payload exceeds the size limit'));
+        return;
+      }
+      chunks.push(c);
+    });
     req.on('end', () => {
+      if (bytes > maxBytes) return;
       try {
         const raw = Buffer.concat(chunks).toString('utf8');
         resolve(raw ? JSON.parse(raw) : {});
@@ -71,9 +92,14 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-function sendText(res: ServerResponse, status: number, body: string): void {
+function sendText(
+  res: ServerResponse,
+  status: number,
+  body: string,
+  contentType = 'text/plain; charset=utf-8',
+): void {
   res.statusCode = status;
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Type', contentType);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -95,6 +121,8 @@ function a2uiPayloadMiddleware(
       || url.startsWith('/__a2ui/')
       || url.startsWith('/__openui_payload')
       || url.startsWith('/__openui/')
+      || url.startsWith('/__lynx_xml_payload')
+      || url.startsWith('/__lynx_xml/')
     )
   ) {
     res.statusCode = 204;
@@ -102,6 +130,49 @@ function a2uiPayloadMiddleware(
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.end();
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/__lynx_xml_payload') {
+    void (async () => {
+      try {
+        const body = (await readJsonBody(req, MAX_LYNX_XML_BODY_BYTES)) as {
+          source?: unknown;
+        };
+        if (typeof body?.source !== 'string') {
+          sendJson(res, 400, { error: 'source is required' });
+          return;
+        }
+        const source = normalizeLynxXmlArtifact(body.source);
+        gcPayloads();
+        if (lynxXmlPayloadStore.size >= MAX_LYNX_XML_PAYLOADS) {
+          const oldest = lynxXmlPayloadStore.keys().next().value;
+          if (oldest) lynxXmlPayloadStore.delete(oldest);
+        }
+        const id = randomUUID();
+        lynxXmlPayloadStore.set(id, { source, createdAt: Date.now() });
+        sendJson(res, 200, {
+          sourceUrl: `/__lynx_xml/${id}/index.lynxml`,
+        });
+      } catch (e) {
+        sendJson(res, 400, {
+          error: e instanceof Error ? e.message : 'bad request',
+        });
+      }
+    })();
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/__lynx_xml/')) {
+    gcPayloads();
+    const match = /^\/__lynx_xml\/([^/]+)\/index\.lynxml(?:\?|$)/u.exec(url);
+    const entry = match?.[1] ? lynxXmlPayloadStore.get(match[1]) : undefined;
+    if (typeof entry?.source === 'string') {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      sendText(res, 200, entry.source, 'application/xml; charset=utf-8');
+    } else {
+      sendJson(res, 404, { error: 'not found' });
+    }
     return;
   }
 

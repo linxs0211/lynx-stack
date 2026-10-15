@@ -234,42 +234,63 @@ describe('GenUI model configuration', () => {
     }
   });
 
-  test('uses a complete client provider without server model config', () => {
-    const previous = process.env[GENUI_MODEL_CONFIG_ENV];
-    delete process.env[GENUI_MODEL_CONFIG_ENV];
-    try {
-      const options = pickProviderOptions({
-        apiKey: '  client-secret  ',
-        baseURL: '  https://api.openai.com/v1  ',
-        model: '  gpt-client  ',
-      });
-      expect(options.disableAgentCache).toBe(true);
-      expect(createLLMProvider(options)).toMatchObject({
-        model: 'gpt-client',
-        api: 'responses',
-        baseURL: 'https://api.openai.com/v1',
-      });
-      expect(() =>
-        createLLMProvider(pickProviderOptions({
-          baseURL: 'https://api.openai.com/v1',
-          model: 'gpt-client',
-        }))
-      ).toThrow(`${GENUI_MODEL_CONFIG_ENV} is required`);
-      expect(() =>
-        createLLMProvider(pickProviderOptions({
-          apiKey: 'client-secret',
-          baseURL: 'https://127.0.0.1/v1',
-          model: 'gpt-client',
-        }))
-      ).toThrow('must be one of the supported provider URLs');
-    } finally {
-      if (previous === undefined) {
-        delete process.env[GENUI_MODEL_CONFIG_ENV];
-      } else {
-        process.env[GENUI_MODEL_CONFIG_ENV] = previous;
+  test.each([
+    {
+      baseURL: 'https://api.openai.com/v1',
+      model: 'gpt-client',
+      api: 'responses',
+    },
+    { baseURL: 'https://api.moonshot.cn/v1', model: 'kimi-k3', api: 'chat' },
+    { baseURL: 'https://api.moonshot.ai/v1', model: 'kimi-k3', api: 'chat' },
+    {
+      baseURL: 'https://api.kimi.com/coding/v1',
+      model: 'kimi-for-coding',
+      api: 'chat',
+    },
+    {
+      baseURL: 'https://api.kimi.ai/coding/v1',
+      model: 'kimi-for-coding',
+      api: 'chat',
+    },
+  ])(
+    'uses a complete client provider at $baseURL without server model config',
+    ({ baseURL, model, api }) => {
+      const previous = process.env[GENUI_MODEL_CONFIG_ENV];
+      delete process.env[GENUI_MODEL_CONFIG_ENV];
+      try {
+        const options = pickProviderOptions({
+          apiKey: '  client-secret  ',
+          baseURL: `  ${baseURL}  `,
+          model: `  ${model}  `,
+        });
+        expect(options.disableAgentCache).toBe(true);
+        expect(createLLMProvider(options)).toMatchObject({
+          model,
+          api,
+          baseURL,
+        });
+        expect(() =>
+          createLLMProvider(pickProviderOptions({
+            baseURL,
+            model,
+          }))
+        ).toThrow(`${GENUI_MODEL_CONFIG_ENV} is required`);
+        expect(() =>
+          createLLMProvider(pickProviderOptions({
+            apiKey: 'client-secret',
+            baseURL: 'https://127.0.0.1/v1',
+            model: 'gpt-client',
+          }))
+        ).toThrow('must be one of the supported provider URLs');
+      } finally {
+        if (previous === undefined) {
+          delete process.env[GENUI_MODEL_CONFIG_ENV];
+        } else {
+          process.env[GENUI_MODEL_CONFIG_ENV] = previous;
+        }
       }
-    }
-  });
+    },
+  );
 
   test('rejects inherited object property names as model selections', () => {
     const parsed = parseModelConfig(JSON.stringify(CONFIG));

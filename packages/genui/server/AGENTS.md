@@ -442,8 +442,9 @@ sending `done`. Upload the normalized document as
 fails, and report `length` as an exhausted model output budget rather than only
 as a missing XML tag. The final artifact must start with lowercase
 `<!doctype lynx>`, use `<lynx engine-version="4.2">`, include exactly one main
-thread script, and end with `</lynx>`. Keep generated UI on Element PAPI; do
-not route it through ReactLynx, JSX, OpenUI, or A2UI.
+thread script, and end with `</lynx>`. Template output preserves its UI tags
+for client-side parsing; Direct output uses Element PAPI. Do not route either
+through ReactLynx, JSX, OpenUI, or A2UI.
 
 Create performs one generation attempt. SDK `maxRetries` defaults to zero
 (additional retries), A2UI `maxRepairAttempts` defaults to zero, and Lynx XML
@@ -455,10 +456,13 @@ so Bench retains its configured repair budget. The shared recovery helper is
 still bounded by its caller's explicit attempt budget.
 
 `enableHtmlFragment` defaults to false. When enabled, the model outputs one
-intermediate document with one root-child `<template>` plus styles and scripts in any order;
-the service compiles the template and injects an id-based `createFragment`
-helper before final validation. Conversion is deterministic postprocessing,
-not a Mastra tool. Keep shared search/image capability scopes independent of it.
+document with one root-child `<template>` plus styles and scripts in any order.
+Preserve that template verbatim in the final stream, published source, and Bench
+report. Validate its bounded structure without generating initial-tree JavaScript.
+The consuming client supplies `createFragment(page, pageId)`, which appends the
+parsed roots and returns the explicit id-to-node map before business callbacks.
+Script/style assembly remains deterministic postprocessing, not a Mastra tool.
+Keep shared search/image capability scopes independent of it.
 
 `enableScriptReuse` independently defaults to false. When enabled, the model
 provides one top-level `definePage({...})` call with business callbacks; the
@@ -471,8 +475,10 @@ or introduce another model round.
 
 Return the exact assembled model text in `metadata.modelOutput` and the successful
 original fragment in `metadata.xmlFragment`; omit fragment metadata when off.
-Stream model text for source inspection, but deliver only the compiled document
-to preview and Judge. Preserve usage and finish reason on compilation failure
+Stream model text for source inspection and deliver the assembled document with
+retained UI tags. The Playground locally adapts it for Web preview and Judge;
+never replace report or published source with that runtime adapter output.
+Preserve usage and finish reason on assembly failure
 so configured Bench repairs count the failed generation.
 
 ## ReactWeb Generation
@@ -583,7 +589,14 @@ OpenAI-compatible custom providers accept only the exact HTTPS base URLs in
 `ALLOWED_CUSTOM_PROVIDER_BASE_URLS`. A2UI and OpenUI also accept the exact TypeSafe Jev
 endpoint described above, through its evaluation adapter. Reject alternate origins, ports, paths,
 credentials, query strings, and fragments. Add a provider only when its
-official OpenAI-compatible endpoint is documented and covered by tests. Do not
+official OpenAI-compatible endpoint is documented and covered by tests. Keep
+the Playground endpoint options synchronized with this allow-list. Kimi uses
+`https://api.moonshot.cn/v1` in China or `https://api.moonshot.ai/v1`
+internationally. Kimi Code membership keys instead use
+`https://api.kimi.com/coding/v1` or `https://api.kimi.ai/coding/v1`, with
+Playground default model `kimi-for-coding`. Both services use the existing
+Chat Completions provider; keep the SDK's real client identity unchanged.
+Kimi Code keys cannot authenticate against the Open Platform endpoints. Do not
 expose these routes publicly without authentication.
 
 ## Rate Limiting

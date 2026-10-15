@@ -44,8 +44,9 @@ export function extractLynxXmlArtifact(value: string): string {
  *
  * Requires a closing Lynx root with an engine version, exactly one closed
  * main-thread script, and no CDATA sections. Does not execute code or validate
- * JavaScript, CSS, Element PAPI semantics, or rendering. Compile intermediate
- * Template or ScriptReuse documents before validating the final artifact.
+ * JavaScript, CSS, Element PAPI semantics, or rendering. Template UI tags may
+ * remain in the artifact for client-side parsing. Assemble ScriptReuse helpers
+ * before validating the final artifact.
  *
  * @throws Error when the document-level contract is invalid.
  * @example

@@ -4,7 +4,7 @@
 
 import { html } from '@codemirror/lang-html';
 
-import { compileLynxXmlFragment } from '@lynx-js/genui/lynx-xml';
+import { assembleLynxXmlArtifact } from '@lynx-js/genui/lynx-xml';
 import type { LynxXmlStylePreset } from '@lynx-js/genui/lynx-xml';
 
 import type { DemosListSource } from './DemosList.js';
@@ -88,10 +88,12 @@ export const LYNX_XML_SCENARIOS: readonly LynxXmlScenario[] = [
     id: 'template-counter',
     title: 'Template Counter',
     description:
-      'Converts a template to Element PAPI at runtime, with counter events authored in the same XML document.',
+      'Keeps the initial UI in template tags, with counter events authored in the same XML document.',
     badge: 'Template',
     sourcePath: 'demos/lynx-xml/template-counter.lynxml',
-    source: compileLynxXmlFragment(templateCounterSource).text,
+    source: assembleLynxXmlArtifact(templateCounterSource, {
+      enableHtmlFragment: true,
+    }).text,
     templateSource: templateCounterSource,
   },
   {
@@ -101,7 +103,8 @@ export const LYNX_XML_SCENARIOS: readonly LynxXmlScenario[] = [
       'The same Template Counter UI and interactions with utility styles, for comparing source token counts.',
     badge: 'StylePreset',
     sourcePath: 'demos/lynx-xml/style-preset-counter.lynxml',
-    source: compileLynxXmlFragment(stylePresetCounterSource, {
+    source: assembleLynxXmlArtifact(stylePresetCounterSource, {
+      enableHtmlFragment: true,
       stylePreset: 'default',
     }).text,
     templateSource: stylePresetCounterSource,
@@ -114,7 +117,8 @@ export const LYNX_XML_SCENARIOS: readonly LynxXmlScenario[] = [
       'The same counter with Template and StylePreset, using shared lifecycle and event helpers to shorten the authored script.',
     badge: 'ScriptReuse',
     sourcePath: 'demos/lynx-xml/script-reuse-counter.lynxml',
-    source: compileLynxXmlFragment(scriptReuseCounterSource, {
+    source: assembleLynxXmlArtifact(scriptReuseCounterSource, {
+      enableHtmlFragment: true,
       enableScriptReuse: true,
       stylePreset: 'default',
     }).text,
@@ -160,7 +164,8 @@ function compileEditorSource(
 ): string {
   return scenario?.templateSource === undefined
     ? source
-    : compileLynxXmlFragment(source, {
+    : assembleLynxXmlArtifact(source, {
+      enableHtmlFragment: true,
       enableScriptReuse: scenario.enableScriptReuse,
       stylePreset: scenario.stylePreset,
     }).text;
@@ -231,7 +236,8 @@ export const LYNX_XML_DEMOS_PAGE_SOURCE = {
       {
         id: 'transformed',
         label: 'Transformed',
-        title: 'Inspect the Element PAPI artifact used for rendering',
+        title:
+          'Inspect the artifact with retained UI tags and assembled helpers',
         editable: false,
         getValue: ({ editorValue, scenario }) => {
           if (!editorValue.trim()) return '';

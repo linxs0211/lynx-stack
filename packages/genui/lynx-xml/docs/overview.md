@@ -49,12 +49,12 @@ rendering remain runtime responsibilities.
 
 ## Generation modes
 
-| Mode             | Model output                                                       | Consumer action                                              |
-| ---------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Direct (default) | Complete `.lynxml` artifact with model-authored Element PAPI code. | Normalize and validate, then render.                         |
-| Template         | Intermediate artifact with one initial-tree `<template>`.          | Transform the template, normalize and validate, then render. |
+| Mode             | Model output                                                       | Consumer action                                                |
+| ---------------- | ------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Direct (default) | Complete `.lynxml` artifact with model-authored Element PAPI code. | Normalize and validate, then render.                           |
+| Template         | Artifact retaining one initial-tree `<template>`.                  | Assemble helpers, then let the client parse the retained tree. |
 
-Template transforms the static element tree deterministically. State and
+Template preserves the static element tree for client-side parsing. State and
 interactions remain model-authored. Without ScriptReuse, the model also owns
 lifecycle registration.
 
@@ -67,13 +67,16 @@ does not change existing parser or renderer support for background scripts.
 
 | Feature     | Option                     | Responsibility moved from model output to transformation                                                |
 | ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Template    | `enableHtmlFragment: true` | Transform the initial XML element tree into Element PAPI JavaScript.                                    |
+| Template    | `enableHtmlFragment: true` | Validate and preserve the initial XML element tree for the client.                                      |
 | ScriptReuse | `enableScriptReuse: true`  | Transform business callbacks into a complete script with shared page, lifecycle, event, and UI helpers. |
 | StylePreset | `stylePreset: 'default'`   | Transform built-in utility-class references into self-contained CSS.                                    |
 
 All three features are independently opt-in in the package API. Prompt and
-transformation must use matching values. Template and ScriptReuse artifacts contain
-an intermediate contract and must be transformed before runtime delivery.
+transformation must use matching values. Assembly adds ScriptReuse helpers while retaining Template UI tags. The client
+supplies `createFragment(page, pageId)` to append the parsed tree and return
+explicit id-to-node bindings. Existing runtimes can use
+`compileLynxXmlFragment(artifact)` as a local adapter without replacing stored
+or published source.
 
 GenUI Create and new Lynx XML Bench groups enable these features by default.
 Saved product settings and historical compatibility are described in the

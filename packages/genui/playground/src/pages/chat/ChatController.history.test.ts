@@ -180,10 +180,14 @@ test('counts the selected Lynx XML artifact view in tokens and restores it from 
 
 test('shows the published Lynx XML preview QR source and restores it from history', async () => {
   const sourceUrl = 'https://cdn.example.com/lynx-xml/preview/id/index.lynxml';
+  const source = DOCUMENT.replace(
+    '<script thread="main">',
+    '<template><text id="label">Retained UI</text></template><script thread="main">',
+  );
   rstest.stubGlobal('fetch', (url: string) =>
     Promise.resolve(jsonResponse(
       url.endsWith('/models') ? MODELS : {
-        text: DOCUMENT,
+        text: source,
         preview: { sourceUrl },
       },
     )));
@@ -198,7 +202,7 @@ test('shows the published Lynx XML preview QR source and restores it from histor
   await rstest.waitFor(() => {
     expect(latestPreviewSource()).toMatchObject({
       kind: 'lynx-xml',
-      source: DOCUMENT,
+      source,
       sourcePath: sourceUrl,
     });
   });
@@ -207,12 +211,15 @@ test('shows the published Lynx XML preview QR source and restores it from histor
     (await getActiveConversationId('lynx-xml'))!,
   );
   expect(saved?.snapshot?.previewPayloadUrls).toEqual({ sourceUrl });
+  expect(saved?.messages).toContainEqual(
+    expect.objectContaining({ role: 'assistant', content: source }),
+  );
 
   await reloadPage();
   await rstest.waitFor(() => {
     expect(latestPreviewSource()).toMatchObject({
       kind: 'lynx-xml',
-      source: DOCUMENT,
+      source,
       sourcePath: sourceUrl,
     });
   });

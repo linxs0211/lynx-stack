@@ -17,8 +17,8 @@ const source = normalizeLynxXmlArtifact(modelOutput);
 missing `<!doctype lynx>` when a `<lynx>` root is present. It throws when no
 artifact is found or the artifact structure contract is invalid. Normalization
 requires `<lynx engine-version="...">`, a closing `</lynx>`, exactly one closed
-`<script thread="main">`, and no CDATA sections. Transform intermediate Template
-or ScriptReuse artifacts before normalizing and validating the final artifact.
+`<script thread="main">`, and no CDATA sections. Assemble ScriptReuse helpers before normalization; final artifacts may retain
+Template UI tags for client-side parsing.
 
 `assembleLynxXmlArtifact` extracts intermediate artifacts internally, so callers
 can pass the original model response directly. Extraction is an internal utility
@@ -81,7 +81,7 @@ function transformModelOutput(source: string) {
 }
 ```
 
-The intermediate artifact must follow these rules:
+The template artifact must follow these rules:
 
 - Include exactly one `<template>` directly inside `<lynx>`, alongside normal
   style and script blocks in any order, with exactly one main-thread script.
@@ -89,14 +89,16 @@ The intermediate artifact must follow these rules:
   Static nodes do not need ids.
 - Call `createFragment(page, pageId)` exactly once during rendering. Keep its
   returned id-to-node map in script-scoped `nodes` for later use, such as
-  `nodes["root"]`. The transformer supplies the helper; the model must not declare
+  `nodes["root"]`. The consuming client supplies the helper; the model must not declare
   or shadow it.
 
-Transformation removes the template and injects `createFragment`, which creates
-and appends the tree and returns only nodes with explicit ids. The result has
-two fields:
+Assembly preserves the template verbatim and does not inject a node factory.
+The consuming client supplies `createFragment(page, pageId)`, which parses and
+appends the initial roots and returns a map containing only explicitly identified
+nodes. With ScriptReuse, the shared lifecycle calls it before `render(ctx)`.
+The result has two fields:
 
-- `text`: the complete `.lynxml` artifact to render.
+- `text`: the assembled `.lynxml` artifact retaining its UI tags.
 - `xmlFragment`: the original XML inside the template.
 
 Transformation validates the artifact and fragment without executing JavaScript.
@@ -171,8 +173,8 @@ GenUI Create exposes **Design**, **Template**, and **StylePreset** as independen
 checkboxes, all enabled for new records. Changes are saved with the current
 record and restored on selection or reload. Once a conversation has generated
 history, these options are read-only; start a new conversation to change them.
-Template transforms markup to Element
-PAPI; StylePreset supplies the built-in utility CSS for either source format.
+Template retains UI tags for client-side parsing; StylePreset supplies the
+built-in utility CSS for either source format.
 New Lynx XML Bench groups also default all three options on and save them in
 their plans; historical settings are preserved.
 The Template setting uses the existing `enableHtmlFragment` option.
@@ -207,8 +209,8 @@ definePage({
 </lynx>
 ```
 
-This is an intermediate contract, not directly runnable XML. Transform it before
-preview or delivery:
+Assemble the shared lifecycle before delivery; the template remains in the
+result for the client to parse:
 
 ```ts
 import {
@@ -277,6 +279,23 @@ implementation is inlined locally. Compare identical Bench groups with only
 ScriptReuse changed, checking input/output tokens, generation duration, validity,
 and Judge results. Provider token counts and real latency are required to quantify
 the savings; source character counts alone do not establish them.
+
+### Adapt for an existing runtime
+
+For Web Core or another runtime without template parsing, compile the assembled
+artifact at the rendering boundary:
+
+```ts
+import { compileLynxXmlFragment } from '@lynx-js/genui/lynx-xml';
+
+const runtimeSource = compileLynxXmlFragment(artifact).text;
+```
+
+Do not enable ScriptReuse a second time: `artifact` already contains its shared
+lifecycle helper. This explicit adapter removes the template and injects the
+Element PAPI node factory. Keep `artifact`, rather than `runtimeSource`, in
+history, downloads, published URLs, and benchmark reports. The Playground also
+adapts locally before packing a screenshot ZIP for an existing native runtime.
 
 ### Transform a standalone fragment
 

@@ -40,11 +40,11 @@ const ENGINE_VERSION_PATTERN = /^\d+(?:\.\d+)*$/u;
 /** Intermediate source contract for deterministic fragment compilation. */
 export const LYNX_XML_HTML_FRAGMENT_INSTRUCTIONS =
   `Template mode is enabled for this request (this output contract overrides the imported document guidance below):
-- Generate the entire document in one response: one <template> containing the initial XML element fragment directly inside <lynx>, alongside CSS and one main-thread script in their normal source blocks. Prefer placing the template first, but block order is not significant. Never omit the template, even when conversation history contains already-compiled .lynxml artifacts. The server removes <template> and compiles it to Element PAPI before delivery; it is an intermediate format, not a runtime Lynx element.
+- Generate the entire document in one response: one <template> containing the initial XML element fragment directly inside <lynx>, alongside CSS and one main-thread script in their normal source blocks. Prefer placing the template first, but block order is not significant. Never omit the template, even when conversation history contains older script-only .lynxml artifacts. The final artifact preserves <template> and its UI tags; the consuming client parses and creates the initial tree. Keep the initial UI hierarchy in XML tags rather than expanding it into Element PAPI calls.
 - Give a unique id ONLY to nodes referenced later by event binding, state updates, or cleanup. Omit id on purely static nodes; do not assign ids to every node. Use well-formed XML, literal attributes and XML entities in the template. Keep style, script, lynx, and page elements outside the fragment. Prefer literal text directly inside <text>. An explicit <raw-text> leaf may use text content or a text attribute, never both; put styling, event handlers, and update ids on its parent <text>. Do not use interpolation, loops, conditional directives, or inline event-handler attributes; implement dynamic behavior in JavaScript.
-- The server supplies createFragment(page, pageId). Call it exactly once in renderPage(), after page and pageId exist: nodes = createFragment(page, pageId). Declare let nodes at main-thread script scope so later event, update, and cleanup handlers can use nodes["cityText"] for id="cityText". Access nodes only after rendering. Do not declare or shadow createFragment, invent nodeN variables, or assume XML ids declare variables.
+- The client supplies createFragment(page, pageId). Call it exactly once in renderPage(), after page and pageId exist: nodes = createFragment(page, pageId). Declare let nodes at main-thread script scope so later event, update, and cleanup handlers can use nodes["cityText"] for id="cityText". Access nodes only after rendering. Do not declare or shadow createFragment, invent nodeN variables, or assume XML ids declare variables.
 - createFragment creates and appends the initial roots to page and returns their id-to-node map. Do not recreate or append the initial roots yourself. Bind events and apply initial state after the call. Use Element PAPI for subsequent dynamic updates and new nodes.
-- Write all CSS, state, event handlers, lifecycle registration, and cleanup in the same response. Do not request conversion, wait for bindings, or output placeholders. The server performs conversion after generation without another model request.`;
+- Write all CSS, state, event handlers, lifecycle registration, and cleanup in the same response. Do not request conversion, wait for bindings, or output placeholders. The server assembles enabled script and style helpers without replacing the template or making another model request.`;
 
 /** Build a system prompt for producing complete, zero-build `.lynxml` files. */
 export function buildLynxXmlSystemPrompt(
@@ -90,7 +90,7 @@ function buildBasePrompt(
   return `
 You are the Lynx XML generation agent for Lynx GenUI. Turn the user's request
 into ${
-    enableHtmlFragment || enableScriptReuse
+    enableScriptReuse
       ? 'one intermediate document for server assembly'
       : 'one complete, runnable, zero-build .lynxml artifact'
   } implemented with
@@ -119,7 +119,7 @@ ${
         )
         : LYNX_XML_HTML_FRAGMENT_INSTRUCTIONS).split('\n').filter(line =>
           !enableScriptReuse
-          || (!line.startsWith('- The server supplies createFragment')
+          || (!line.startsWith('- The client supplies createFragment')
             && !line.startsWith('- createFragment creates')
             && !line.startsWith('- Write all CSS,')
             && !line.startsWith('- Write only custom CSS'))

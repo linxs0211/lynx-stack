@@ -355,63 +355,72 @@ describe('Lynx XML stream route', () => {
     },
   );
 
-  test('uploads the transformed artifact rather than the model fragment', async () => {
-    const global = globalThis as GlobalWithLynxXmlService;
-    const previous = global.__LYNX_XML_AGENT_SERVICE__;
-    rstest.mocked(publishLynxXmlArtifact).mockResolvedValue({
-      sourceUrl: 'https://cdn.example.com/lynx-xml/preview/id/index.lynxml',
-    });
-    global.__LYNX_XML_AGENT_SERVICE__ = {
-      streamAsAsyncIterable() {
-        return Promise.resolve({
-          textStream: Readable.from([ARTIFACT]),
-          finalize: () =>
-            Promise.resolve({
-              text: TRANSFORMED_ARTIFACT,
-              usage: undefined,
-              finishReason: 'stop',
-              metadata: {
-                modelOutput: INTERMEDIATE_FRAGMENT,
-                xmlFragment: '<view><text>Counter</text></view>',
-              },
-            }),
-        });
-      },
-    };
-
-    try {
-      const response = await app.request('/lynx-xml/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: 'Create a counter' }],
-        }),
+  test.each([false, true])(
+    'uploads assembled source and retains its UI tags (template=%s)',
+    async retainsTemplate => {
+      const artifact = retainsTemplate
+        ? TRANSFORMED_ARTIFACT.replace(
+          '<script thread="main">',
+          '<template><view><text>Counter</text></view></template>\n<script thread="main">',
+        )
+        : TRANSFORMED_ARTIFACT;
+      const global = globalThis as GlobalWithLynxXmlService;
+      const previous = global.__LYNX_XML_AGENT_SERVICE__;
+      rstest.mocked(publishLynxXmlArtifact).mockResolvedValue({
+        sourceUrl: 'https://cdn.example.com/lynx-xml/preview/id/index.lynxml',
       });
-      const body = await response.text();
-      const doneFrame = body.split('\n\n').find((frame) =>
-        frame.startsWith('event: done\n')
-      );
-      expect(publishLynxXmlArtifact).toHaveBeenCalledWith(
-        TRANSFORMED_ARTIFACT,
-      );
-      expect(publishLynxXmlArtifact).not.toHaveBeenCalledWith(
-        INTERMEDIATE_FRAGMENT,
-      );
-      expect(JSON.parse(doneFrame!.slice('event: done\ndata: '.length)))
-        .toMatchObject({
-          text: TRANSFORMED_ARTIFACT,
-          metadata: {
-            modelOutput: INTERMEDIATE_FRAGMENT,
-          },
-          preview: {
-            sourceUrl:
-              'https://cdn.example.com/lynx-xml/preview/id/index.lynxml',
-          },
+      global.__LYNX_XML_AGENT_SERVICE__ = {
+        streamAsAsyncIterable() {
+          return Promise.resolve({
+            textStream: Readable.from([ARTIFACT]),
+            finalize: () =>
+              Promise.resolve({
+                text: artifact,
+                usage: undefined,
+                finishReason: 'stop',
+                metadata: {
+                  modelOutput: INTERMEDIATE_FRAGMENT,
+                  xmlFragment: '<view><text>Counter</text></view>',
+                },
+              }),
+          });
+        },
+      };
+
+      try {
+        const response = await app.request('/lynx-xml/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: 'Create a counter' }],
+          }),
         });
-    } finally {
-      global.__LYNX_XML_AGENT_SERVICE__ = previous;
-    }
-  });
+        const body = await response.text();
+        const doneFrame = body.split('\n\n').find((frame) =>
+          frame.startsWith('event: done\n')
+        );
+        expect(publishLynxXmlArtifact).toHaveBeenCalledWith(
+          artifact,
+        );
+        expect(publishLynxXmlArtifact).not.toHaveBeenCalledWith(
+          INTERMEDIATE_FRAGMENT,
+        );
+        expect(JSON.parse(doneFrame!.slice('event: done\ndata: '.length)))
+          .toMatchObject({
+            text: artifact,
+            metadata: {
+              modelOutput: INTERMEDIATE_FRAGMENT,
+            },
+            preview: {
+              sourceUrl:
+                'https://cdn.example.com/lynx-xml/preview/id/index.lynxml',
+            },
+          });
+      } finally {
+        global.__LYNX_XML_AGENT_SERVICE__ = previous;
+      }
+    },
+  );
 
   test('reports token-limit metadata when the final artifact is incomplete', async () => {
     const global = globalThis as GlobalWithLynxXmlService;

@@ -28,7 +28,11 @@ import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { copyToClipboard } from '../utils/clipboard.js';
 import { DEFAULT_A2UI_DEMO_URL } from '../utils/demoUrl.js';
 import type { Protocol } from '../utils/protocol.js';
-import { publishOpenUIPayload } from '../utils/publishPayload.js';
+import {
+  publishLocalLynxXmlSource,
+  publishOpenUIPayload,
+  usesLocalPayloadStore,
+} from '../utils/publishPayload.js';
 import type {
   LocalA2UIMessagesPayload,
   LocalA2UIMessagesPayloadCache,
@@ -216,8 +220,8 @@ export function createPreviewQrCards(
       item: {
         title: 'Web Preview',
         description:
-          'Edited Lynx XML is rendered only in the current browser. Reset to the example to restore its shareable URL.',
-        placeholder: 'QR unavailable for local edits',
+          'Sharing this XML requires a published HTTP(S) source URL.',
+        placeholder: 'XML URL unavailable',
       },
     });
   }
@@ -227,10 +231,14 @@ export function createPreviewQrCards(
       key: 'nativePreview',
       item: {
         title: 'Native Preview',
-        description: 'Opens in LynxExplorer for native rendering.',
+        description: previewSource.kind === 'lynx-xml'
+          ? 'Loads the XML source directly in your native client.'
+          : 'Opens in LynxExplorer for native rendering.',
         url: lynxDevUrl,
         urlTitle: lynxDevUrl,
-        copyButtonTitle: 'Copy Lynx dev bundle URL',
+        copyButtonTitle: previewSource.kind === 'lynx-xml'
+          ? 'Copy XML URL'
+          : 'Copy Lynx dev bundle URL',
         variant: 'alt',
         showQrCode,
       },
@@ -241,8 +249,8 @@ export function createPreviewQrCards(
       item: {
         title: 'Native Preview',
         description:
-          'A browser-local edited source cannot be opened in LynxExplorer. Reset to the example to restore its native URL.',
-        placeholder: 'QR unavailable for local edits',
+          'Native preview requires an XML URL reachable from your device.',
+        placeholder: 'XML URL unavailable',
         variant: 'alt',
       },
     });
@@ -1032,7 +1040,34 @@ export function PreviewPanel(props: PreviewPanelProps) {
       if (!previewSource.sourcePath) {
         setRenderShareUrl('');
         setLynxDevUrl('');
-        return;
+        if (!usesLocalPayloadStore()) return;
+        const controller = new AbortController();
+        void (async () => {
+          try {
+            const sourcePath = await publishLocalLynxXmlSource(
+              previewSource.source,
+              controller.signal,
+            );
+            if (controller.signal.aborted || seq !== buildSeqRef.current) {
+              return;
+            }
+            const shareBaseUrl = new URL(baseUrl);
+            if (rspeedyDevUrl) {
+              shareBaseUrl.host = new URL(rspeedyDevUrl).host;
+            }
+            const sourceUrl = new URL(sourcePath, shareBaseUrl).toString();
+            setRenderShareUrl(buildLynxXmlRenderUrl({
+              sourceUrl,
+              theme: previewSource.theme,
+            }, shareBaseUrl.toString()));
+            setLynxDevUrl(sourceUrl);
+          } catch (error) {
+            if (!controller.signal.aborted) {
+              console.warn('[lynx-xml] Failed to publish local XML', error);
+            }
+          }
+        })();
+        return () => controller.abort();
       }
 
       const shareSourceUrl = new URL(

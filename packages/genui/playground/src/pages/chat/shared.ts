@@ -41,6 +41,26 @@ export const CUSTOM_PROVIDER_BASE_URL_OPTIONS = [
     label: 'OpenRouter',
     model: 'openrouter/auto',
   },
+  {
+    value: 'https://api.moonshot.cn/v1',
+    label: 'Kimi (China)',
+    model: 'kimi-k3',
+  },
+  {
+    value: 'https://api.moonshot.ai/v1',
+    label: 'Kimi (International)',
+    model: 'kimi-k3',
+  },
+  {
+    value: 'https://api.kimi.com/coding/v1',
+    label: 'Kimi Code (China)',
+    model: 'kimi-for-coding',
+  },
+  {
+    value: 'https://api.kimi.ai/coding/v1',
+    label: 'Kimi Code (International)',
+    model: 'kimi-for-coding',
+  },
 ] as const;
 export const CUSTOM_JEV_PROVIDER_OPTION = {
   value: 'https://api.typesafe.ai/v1',

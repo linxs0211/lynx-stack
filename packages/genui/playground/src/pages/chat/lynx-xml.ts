@@ -66,7 +66,7 @@ export function isCompleteLynxXmlSource(source: string): boolean {
     '',
   );
   return source.startsWith(DOCTYPE)
-    && !/<template\b/u.test(markup)
+    && (!/<template\b/u.test(markup) || markup.includes('</template>'))
     && source.includes('<lynx engine-version="')
     && source.includes(MAIN_THREAD_START)
     && source.trimEnd().endsWith(ROOT_END);
@@ -403,7 +403,7 @@ export const LYNX_XML_CHAT_ADAPTER = {
       return [...CHAT_PROVIDER_SETTINGS_ADAPTER.controls(settings), {
         id: 'enableHtmlFragment',
         label: 'Template',
-        description: 'Convert <template> markup to Element PAPI at runtime.',
+        description: 'Keep UI tags in <template> for client-side parsing.',
         kind: 'checkbox' as const,
         value: settings.enableHtmlFragment === false ? 'off' : 'on',
       }, {

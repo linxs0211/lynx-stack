@@ -35,6 +35,28 @@ export async function publishLocalConversation(
   return new URL(data.messagesUrl, window.location.origin).toString();
 }
 
+/** Publish retained XML in the development server's temporary payload store. */
+export async function publishLocalLynxXmlSource(
+  source: string,
+  signal: AbortSignal,
+): Promise<string> {
+  const res = await window.fetch('/__lynx_xml_payload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source }),
+    signal,
+  });
+  const data = await res.json() as { sourceUrl?: unknown; error?: unknown };
+  if (!res.ok || typeof data.sourceUrl !== 'string') {
+    throw new Error(
+      typeof data.error === 'string'
+        ? data.error
+        : 'Failed to publish local Lynx XML',
+    );
+  }
+  return data.sourceUrl;
+}
+
 export interface PublishedPayload {
   messagesUrl: string;
   actionMocksUrl?: string;

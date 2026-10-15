@@ -82,17 +82,29 @@ For generated XML, consume `done.preview.sourceUrl` from the server, persist it
 with the assistant turn, and use it for Web-share and native LynxExplorer links.
 Keep the current Web preview on the in-memory final source.
 
+When local development has no published XML URL, reuse the dev payload store
+to serve the complete retained artifact at `/__lynx_xml/<id>/index.lynxml`.
+Build both QR links with the LAN origin from `/__rspeedy_url`, leaving the
+in-page preview on its original source. The store accepts at most 2 MiB per
+request, keeps 32 XML artifacts, and expires them after 30 minutes or a server
+restart. Never publish the Web-only Element PAPI conversion or a Blob URL.
+Production and cross-network links still require server-owned TOS publication.
+
 ### Template Examples
 
 Import examples as raw editor source. Keep `<template>`, styles, and an authored
 `<script thread="main">` together in the XML; the script owns lifecycle and
-interaction logic. Convert with `compileLynxXmlFragment` from
-`@lynx-js/genui/lynx-xml` at preview runtime, never during the build.
+interaction logic. Assemble scripts and styles with `assembleLynxXmlArtifact`
+from `@lynx-js/genui/lynx-xml`, retaining the template in editor, history, and
+published source. `LynxXmlView` fetches remote source when needed and adapts
+retained tags with `compileLynxXmlFragment` only for the live Web runtime.
+Apply the same local adapter before Bench screenshot ZIP creation, without
+rewriting report source.
 
 Show editable Original and read-only Transformed views. Template list URLs use
-`exampleId` to load and convert the registered example. Preserve the last valid
-preview on conversion errors. Never send an intermediate `<template>` to Lynx
-or expose its source file as a runnable native artifact.
+`exampleId` to load the registered example. Preserve the last valid preview on
+conversion errors. Native consumers of retained templates must supply the
+client parsing contract; existing runtimes need the explicit local adapter.
 
 ### Element Layout
 

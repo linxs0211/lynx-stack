@@ -6,7 +6,10 @@ import { runInNewContext } from 'node:vm';
 
 import { expect, rstest, test } from '@rstest/core';
 
-import { assembleLynxXmlArtifact } from '../src/fragment-artifact.js';
+import {
+  assembleLynxXmlArtifact,
+  compileLynxXmlFragment,
+} from '../src/fragment-artifact.js';
 import { buildLynxXmlSystemPrompt } from '../src/prompt.js';
 
 function document(script: string, template = true) {
@@ -63,7 +66,8 @@ definePage({
       enableHtmlFragment: template,
       stylePreset: 'default',
     });
-    expect(compiled.text).not.toContain('<template>');
+    expect(compiled.text.includes('<template>')).toBe(template);
+    expect(compiled.text).not.toContain('function createFragment(');
     expect(compiled.text.match(/<style>/gu)).toHaveLength(1);
     expect(compiled.text).toContain(
       '.genui-page { display: flex; flex-direction: column; }',
@@ -175,7 +179,10 @@ definePage({
       onRetained,
       onRemoved,
     };
-    const main = compiled.text.split('<script thread="main">')[1]!.split(
+    const runtimeSource = template
+      ? compileLynxXmlFragment(compiled.text).text
+      : compiled.text;
+    const main = runtimeSource.split('<script thread="main">')[1]!.split(
       '</script>',
     )[0]!;
     expect(main.startsWith('"use strict";')).toBe(true);

@@ -178,6 +178,8 @@ test.each(
 )(
   'captures $protocol with delay $screenshotSettleMs and deduplicates SSE replay',
   async ({ protocol, screenshotSettleMs }) => {
+    const lynxXmlSource =
+      '<!doctype lynx><lynx engine-version="4.2"><template><text id="city">杭州</text></template><script thread="main">createFragment(page, pageId);</script></lynx>';
     const path = protocol === 'lynx-xml'
       ? 'screenshot/zip/upload'
       : 'screenshot/zip/url';
@@ -196,7 +198,7 @@ test.each(
         Response.json({
           path,
           fields,
-          ...(protocol === 'lynx-xml' ? { source: '<lynx>杭州</lynx>' } : {}),
+          ...(protocol === 'lynx-xml' ? { source: lynxXmlSource } : {}),
           timeoutMs: 1000,
         }),
       )
@@ -226,7 +228,11 @@ test.each(
       expect(file.type).toBe('application/zip');
       const archive = unzipSync(new Uint8Array(await file.arrayBuffer()));
       expect(Object.keys(archive)).toEqual(['index.lynxml']);
-      expect(strFromU8(archive['index.lynxml']!)).toBe('<lynx>杭州</lynx>');
+      const runtime = strFromU8(archive['index.lynxml']!);
+      expect(runtime).not.toContain('<template>');
+      expect(runtime).toContain('__CreateRawText("杭州")');
+      expect(runtime).toContain('nodeMap["city"] = element;');
+      expect(lynxXmlSource).toContain('<template>');
       expect(form.get('source')).toBeNull();
       expect(form.get('globalProps')).toBeNull();
       form.delete('file');

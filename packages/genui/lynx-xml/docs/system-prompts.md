@@ -32,7 +32,7 @@ instructions.
 | Option               | Default  | Purpose                                                                              |
 | -------------------- | -------- | ------------------------------------------------------------------------------------ |
 | `engineVersion`      | `'4.2'`  | Target engine version in the generated root. Accepts dot-separated numeric segments. |
-| `enableHtmlFragment` | `false`  | Generate an intermediate artifact with one initial-tree `<template>`.                |
+| `enableHtmlFragment` | `false`  | Generate an artifact retaining one initial-tree `<template>` for client parsing.     |
 | `enableScriptReuse`  | `false`  | Generate `definePage` callbacks for ScriptReuse transformation.                      |
 | `stylePreset`        | Disabled | Set to `'default'` to describe the built-in Lynx utility classes.                    |
 | `appendix`           | None     | Append trimmed application-specific instructions after the built-in contract.        |
@@ -73,7 +73,7 @@ package API defaults. Design guidance is a separate Server feature, not a
 | -------------------------------------- | ------------------------------------------------------------------- |
 | `LYNX_XML_SYSTEM_PROMPT`               | Prebuilt Direct prompt with default options.                        |
 | `LYNX_XML_HTML_FRAGMENT_SYSTEM_PROMPT` | Prebuilt Template prompt with ScriptReuse and StylePreset disabled. |
-| `LYNX_XML_HTML_FRAGMENT_INSTRUCTIONS`  | Template-specific intermediate source contract.                     |
+| `LYNX_XML_HTML_FRAGMENT_INSTRUCTIONS`  | Template source contract with retained UI tags and client parsing.  |
 
 Prefer `buildLynxXmlSystemPrompt` when options differ across requests. An appendix
 can add application policy while preserving the artifact, lifecycle, and

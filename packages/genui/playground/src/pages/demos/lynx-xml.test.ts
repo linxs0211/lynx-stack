@@ -11,6 +11,7 @@ import {
   LYNX_XML_DEMOS_PAGE_SOURCE,
   LYNX_XML_SCENARIOS,
 } from './lynx-xml.js';
+import { prepareLynxXmlRuntimeSource } from '../../utils/lynxXmlRuntime.js';
 import { PROTOCOLS } from '../../utils/protocol.js';
 
 const FLEX_LAYOUT_CLASSES: Readonly<Record<string, readonly string[]>> = {
@@ -148,7 +149,10 @@ describe('Lynx XML showcase', () => {
           /__AppendElement\(page, (?:card|scroll)\);/u,
         );
       }
-      expect(scenario.source).not.toContain('<template>');
+      expect(scenario.source.includes('<template>')).toBe(
+        Boolean(scenario.templateSource),
+      );
+      expect(scenario.source).not.toContain('function createFragment(');
     }
     expect(LYNX_XML_SCENARIOS[1]!.source).toContain('__ReplaceElements');
     expect(LYNX_XML_SCENARIOS[3]!.source).toContain(
@@ -176,7 +180,13 @@ describe('Lynx XML showcase', () => {
 
   test('uses the entry node itself as a vertical scroll view', () => {
     for (const scenario of LYNX_XML_SCENARIOS) {
-      const node = scenario.templateSource ? 'element' : '(?:card|scroll)';
+      if (scenario.templateSource) {
+        expect(scenario.source).toMatch(
+          /<template>\s*<scroll-view\b[^>]+scroll-orientation="vertical"/u,
+        );
+        continue;
+      }
+      const node = '(?:card|scroll)';
       expect(scenario.source).toMatch(
         new RegExp(`${node} = __CreateScrollView\\(pageId\\);`, 'u'),
       );
@@ -233,7 +243,7 @@ describe('Lynx XML showcase', () => {
     });
   });
 
-  test('converts templates with authored scripts at preview time and marks template list URLs', () => {
+  test('retains templates with authored scripts and marks template list URLs', () => {
     const scenario = LYNX_XML_DEMOS_PAGE_SOURCE.findScenario(
       'template-counter',
     )!;
@@ -274,9 +284,12 @@ describe('Lynx XML showcase', () => {
     });
     if (!('value' in edited)) throw new Error(edited.error);
     expect(edited.value.previewInput.sourcePath).toBeUndefined();
-    expect(edited.value.previewInput.source).not.toContain('<template>');
+    expect(edited.value.previewInput.source).toContain('<template>');
+    expect(edited.value.previewInput.source).not.toContain(
+      'function createFragment(',
+    );
     expect(edited.value.previewInput.source).toContain(
-      '__CreateRawText("Reading counter")',
+      '>Reading counter</text>',
     );
     expect(edited.value.previewInput.source).toContain('count += 2;');
     const transformed = LYNX_XML_DEMOS_PAGE_SOURCE.editor.views[1]!;
@@ -320,7 +333,7 @@ describe('Lynx XML showcase', () => {
     if (!('value' in edited)) throw new Error(edited.error);
     const { source, sourcePath } = edited.value.previewInput;
     expect(sourcePath).toBeUndefined();
-    expect(source).not.toContain('<template>');
+    expect(source).toContain('<template>');
     expectCssDeclaration(source, 'bg-indigo-50', 'background-color: #eef2ff;');
     expect(LYNX_XML_DEMOS_PAGE_SOURCE.editor.views[1]!.getValue({
       editorValue,
@@ -373,7 +386,8 @@ describe('Lynx XML showcase', () => {
     if (!('value' in edited)) throw new Error(edited.error);
     const { source, sourcePath } = edited.value.previewInput;
     expect(sourcePath).toBeUndefined();
-    expect(source).not.toContain('<template>');
+    expect(source).toContain('<template>');
+    expect(source).not.toContain('function createFragment(');
     expect(source).toContain('function definePage(');
     expect(source).toContain('count += 2;');
     expectCssDeclaration(source, 'bg-indigo-50', 'background-color: #eef2ff;');
@@ -441,7 +455,9 @@ describe('Lynx XML showcase', () => {
         __RemoveEventListener: (node: Element) => taps.delete(node),
         __FlushElementTree: flush,
       };
-      const script = scenario.source.split('<script thread="main">')[1]!.split(
+      const script = prepareLynxXmlRuntimeSource(scenario.source).split(
+        '<script thread="main">',
+      )[1]!.split(
         '</script>',
       )[0]!;
       runInNewContext(script, context);

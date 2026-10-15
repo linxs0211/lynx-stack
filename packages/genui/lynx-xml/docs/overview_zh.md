@@ -44,12 +44,12 @@ Lynx 运行时共同定义。
 
 ## 生成模式
 
-| 模式           | 模型输出                                                | 业务处理                       |
-| -------------- | ------------------------------------------------------- | ------------------------------ |
-| Direct（默认） | 完整 `.lynxml` 产物，包含模型编写的 Element PAPI 代码。 | 规范化并校验后渲染。           |
-| Template       | 含一个初始元素树 `<template>` 的中间产物。              | 转换模板，规范化并校验后渲染。 |
+| 模式           | 模型输出                                                | 业务处理                                 |
+| -------------- | ------------------------------------------------------- | ---------------------------------------- |
+| Direct（默认） | 完整 `.lynxml` 产物，包含模型编写的 Element PAPI 代码。 | 规范化并校验后渲染。                     |
+| Template       | 保留一个初始元素树 `<template>` 的产物。                | 组装辅助逻辑，由客户端解析保留的元素树。 |
 
-Template 以确定性方式转换静态元素树。状态和交互仍由模型编写；未启用 ScriptReuse 时，
+Template 保留静态元素树，由客户端解析。状态和交互仍由模型编写；未启用 ScriptReuse 时，
 生命周期注册也由模型负责。
 
 生成契约面向主线程：页面状态、UI 交互和生命周期回调放在一个
@@ -60,12 +60,14 @@ Template 以确定性方式转换静态元素树。状态和交互仍由模型�
 
 | 能力        | 选项                       | 从模型输出移到转换阶段的职责                                           |
 | ----------- | -------------------------- | ---------------------------------------------------------------------- |
-| Template    | `enableHtmlFragment: true` | 将初始 XML 元素树转换为 Element PAPI JavaScript。                      |
+| Template    | `enableHtmlFragment: true` | 校验并保留初始 XML 元素树，交给客户端解析。                            |
 | ScriptReuse | `enableScriptReuse: true`  | 将业务回调转换为包含公共页面、生命周期、事件和 UI 辅助逻辑的完整脚本。 |
 | StylePreset | `stylePreset: 'default'`   | 将内置工具类引用转换为自包含 CSS。                                     |
 
 包 API 中三个能力均独立、默认关闭。Prompt 和转换必须使用一致的选项。
-Template 和 ScriptReuse 产物包含中间契约，交给运行时前必须完成转换。
+组装会补齐 ScriptReuse 辅助逻辑并保留 Template 标签。客户端提供
+`createFragment(page, pageId)`，追加解析后的初始树并返回显式 id 到节点的映射。
+现有运行时可以本地调用 `compileLynxXmlFragment(artifact)` 适配，存储和发布仍保留 UI 标签。
 
 GenUI Create 和新建 Lynx XML Bench 分组默认开启这些能力。已保存的产品设置
 和历史兼容行为见[产物指南](./artifact-guide_zh.md)。Design 指导由 GenUI Server

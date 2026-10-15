@@ -16,12 +16,16 @@ entry selects the direct XML path through `protocol=lynx-xml`. Each example uses
 the same single-file format with Lynx CSS plus main-thread and, where needed,
 background-thread JavaScript.
 
-Lynx XML Create offers an **XML fragment** selector, disabled by default.
+Lynx XML Create offers a **Template** selector, enabled for new conversations.
 With `enableHtmlFragment: true`, the model writes a template, styles, and
-interaction code in one response. The server compiles and assembles the final
-`.lynxml` without a conversion tool or a second model request. Shared search or
+interaction code in one response. The server preserves the template's UI tags
+and assembles enabled script/style helpers without a conversion tool or a second
+model request. The client supplies `createFragment(page, pageId)` to parse and
+append the initial tree and return its id-to-node map. Shared search or
 image tools can still require their own model rounds. Bench exposes the same
-choice per comparison group. Preview receives only the compiled final document;
+choice per comparison group. The Web preview and Bench screenshot relay adapt
+the assembled artifact locally for existing runtimes; editor, history, reports,
+and published source retain the UI tags.
 the artifact viewer shows Original by default for the original model output and
 lets users switch to Transformed. Without conversion, it shows Source.
 
@@ -135,6 +139,15 @@ Create and Bench also retain their URL query overrides for local diagnosis:
 | `TOS_ACCESS_KEY`, `TOS_SECRET_KEY`, `TOS_BUCKET`, `TOS_REGION` | Short, shareable preview URLs via Volcengine TOS    | disabled            |
 | `TOS_REACTLYNX_STORAGE_PREFIX`                                 | ReactLynx artifact object prefix                    | `reactlynx`         |
 
+During local development, Lynx XML without a published TOS URL is served from
+the Playground's temporary XML payload store. **Native Preview** contains a
+direct HTTP URL to the retained `.lynxml` document, including its UI tags;
+**Web Preview** loads that document through `render.html`. Both QR URLs use the
+development server's LAN address so a device on the same reachable network can
+fetch them. The store keeps 32 artifacts for up to 30 minutes and is cleared
+when the dev server restarts. Production and cross-network sharing still
+require TOS publication.
+
 The Create tab and Bench runner load their model selectors from the server's `GET /models`
 endpoint. Server-owned provider credentials, upstream model ids, and upstream
 API URLs remain server-only. The selector also exposes a `Custom API key`
@@ -147,8 +160,21 @@ base URL defaults and clears the API key; none of these fields are written to
 browser storage.
 
 Changing the custom endpoint also fills its default model: OpenAI uses
-`gpt-5.6-terra`, Google Gemini uses `gemini-3.7-flash`, and OpenRouter uses
-`openrouter/auto`. The model field remains editable after it is filled.
+`gpt-5.6-terra`, Google Gemini uses `gemini-3.7-flash`, OpenRouter uses
+`openrouter/auto`, and Kimi uses `kimi-k3`. Select **Kimi (China)** for
+`https://api.moonshot.cn/v1` or **Kimi (International)** for
+`https://api.moonshot.ai/v1`, matching the platform that issued your API key.
+The model field remains editable after it is filled. See the official
+[China quickstart](https://platform.kimi.com/docs/get-api-key) and
+[international quickstart](https://platform.kimi.ai/docs/overview).
+
+For a **Kimi Code membership API key**, select **Kimi Code (China)** at
+`https://api.kimi.com/coding/v1` or **Kimi Code (International)** at
+`https://api.kimi.ai/coding/v1`. These options default to `kimi-for-coding`;
+the model remains editable for other models your membership supports.
+Kimi Code keys use a different service from the Kimi Open Platform and cannot
+authenticate against the `api.moonshot.*` endpoints. See the official
+[Kimi Code API guide](https://www.kimi.com/code/docs/#api-%E6%8E%A5%E5%85%A5).
 
 When `GENUI_MODEL_CONFIG_JSON` is unset, the Create tab opens directly in this
 custom-provider form instead of requiring a server-owned model. A complete
@@ -156,7 +182,7 @@ custom configuration can make model requests without
 `GENUI_MODEL_CONFIG_JSON`.
 
 Custom base URLs are requested by the GenUI server and must match the approved
-OpenAI, Google Gemini, or OpenRouter OpenAI-compatible endpoint. Alternate
+OpenAI, Google Gemini, OpenRouter, or Kimi OpenAI-compatible endpoint. Alternate
 origins, ports, paths, credentials, queries, and fragments are rejected. Use
 `GENUI_MODEL_CONFIG_JSON` for an intentionally private, HTTP, or custom
 endpoint. Public deployments must still protect model routes with

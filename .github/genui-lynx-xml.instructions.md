@@ -46,26 +46,31 @@ produces one intermediate document containing one `<template>` directly inside
 `<lynx>`, alongside CSS and one main-thread script. Accept source blocks in
 any order and skip raw scripts, styles, and comments when locating the template.
 Require ids only on nodes referenced by handlers, updates, or cleanup; static
-nodes do not need ids. After model generation,
-compile the fragment, remove the template, and inject `createFragment(page,
-pageId)`. This helper appends the initial tree and returns an XML-id-to-node map;
-reuse one temporary element reference and a parent stack while building the
-tree, and retain only explicitly identified nodes in the returned node map.
+nodes do not need ids. After model generation, preserve the template verbatim
+while assembling enabled script and style helpers. Validate its structure and
+collect classes without generating initial-tree JavaScript. The consuming client
+supplies `createFragment(page, pageId)`, which appends the parsed initial tree and
+returns an XML-id-to-node map containing only explicitly identified nodes.
+Keep `compileLynxXmlFragment` as an explicit adapter for existing runtimes; its
+generated tree uses one temporary element reference and a parent stack.
 The model stores that map at main-thread script scope for later handlers. Do
 not generate a separate nodeN variable for each element. Do not register a conversion
 tool, retain a placeholder registry, or request another model round on success.
 Keep failures explicit; Bench owns configured repairs and raw generation stays
-single-call. The ordinary Lynx XML streaming service uses bounded shared recovery
-for invalid token-limited output: one exact-boundary continuation when possible,
-then compact regeneration, with at most three generation attempts in total.
+single-call. The ordinary Lynx XML Create stream performs one generation attempt;
+do not automatically continue or regenerate after truncation or reasoning-only
+exhaustion. Shared recovery remains bounded by its caller's explicit attempt budget.
 Never trim a partial source before continuation or invent closing syntax. Preserve
 the selected model, per-call output budget, cancellation, and tool scope.
 
 Preserve the exact assembled intermediate model response in `metadata.modelOutput` and
 the successful original fragment in `metadata.xmlFragment`. Off omits the
 fragment metadata. Stream model text as source evidence, but preview and Judge
-only the compiled final document. Preserve usage and finish reason when
-postprocessing fails. Buffer continuation/regeneration responses, emit the final
+only the assembled final document with retained UI tags. Adapt it locally at
+the Playground Web and Judge capture boundaries, without modifying stored or
+published source. Preserve usage and finish reason when
+postprocessing fails. When a caller explicitly enables recovery, buffer its
+continuation/regeneration responses, emit the final
 validated document through `done`, and include aggregated usage and
 `metadata.generationAttempts` when recovery ran. Test real Mastra generation and streaming,
 including truncated and empty token-limited responses,

@@ -223,6 +223,44 @@ test.each([undefined, false, true])(
   },
 );
 
+test.each([
+  { baseURL: 'https://api.moonshot.cn/v1', model: 'kimi-k3' },
+  { baseURL: 'https://api.moonshot.ai/v1', model: 'kimi-k3' },
+  { baseURL: 'https://api.kimi.com/coding/v1', model: 'kimi-for-coding' },
+  { baseURL: 'https://api.kimi.ai/coding/v1', model: 'kimi-for-coding' },
+])('Lynx XML submits Kimi credentials to $baseURL', ({ baseURL, model }) => {
+  const adapter = LYNX_XML_CHAT_ADAPTER;
+  const custom = adapter.settings.update(
+    adapter.settings.initial(),
+    'provider',
+    CUSTOM_PROVIDER_ID,
+  );
+  const settings = adapter.settings.update(
+    adapter.settings.update(custom, 'baseURL', baseURL),
+    'apiKey',
+    '  sk-kimi-test  ',
+  );
+  const request = adapter.createRequest({
+    prompt: 'Build a counter',
+    settings,
+    conversation: { history: [], dataModel: {} },
+    host: {
+      origin: 'http://localhost:3000',
+      hostname: 'localhost',
+      protocol: 'http:',
+      search: '',
+      baseUrl: '/',
+    },
+    signal: new AbortController().signal,
+  });
+  expect(request.body).toMatchObject({
+    apiKey: 'sk-kimi-test',
+    baseURL,
+    model,
+    enableHtmlFragment: true,
+  });
+});
+
 test('toggling Template preserves the independent StylePreset selection', () => {
   const adapter = LYNX_XML_CHAT_ADAPTER.settings;
   const settings = adapter.update(
@@ -236,7 +274,7 @@ test('toggling Template preserves the independent StylePreset selection', () => 
   );
 });
 
-test('keeps intermediate fragment source out of preview and migrates the saved switch', () => {
+test('previews retained template source and migrates the saved switch', () => {
   const intermediate =
     '<!doctype lynx>\n<lynx engine-version="4.2"><template><view/></template><script thread="main">createFragment(page, pageId);</script></lynx>';
   for (
@@ -252,7 +290,7 @@ test('keeps intermediate fragment source out of preview and migrates the saved s
       theme: 'light',
       protocol: PROTOCOLS['lynx-xml'],
       previewPayloadUrls: null,
-    })).toBeUndefined();
+    })).toMatchObject({ kind: 'lynx-xml', source });
   }
   const migrated = parseStoredProviderSettings(
     JSON.stringify({ enableHtmlFragmentTool: true }),

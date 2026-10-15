@@ -5,6 +5,14 @@ zero-build `.lynxml` artifacts, artifact extraction, and document validation;
 model providers, agent runtimes, streaming, and preview rendering belong in
 their consuming packages.
 
+Preserve `<template>` and its UI tags in `assembleLynxXmlArtifact` output.
+Validate retained markup and collect preset classes without generating initial
+tree JavaScript. The consuming client supplies `createFragment(page, pageId)`,
+which appends the parsed roots and returns the explicit XML-id-to-node map.
+Keep ScriptReuse lifecycle assembly and StylePreset CSS independent of this
+boundary. Use `compileLynxXmlFragment` only as an explicit adapter for runtimes
+without template parsing; do not publish or persist that adapted preview source.
+
 Use the pinned direct dependency on `@lynx-js/skill-vanilla-lynx` as the source
 of truth for shared Vanilla Lynx runtime guidance. Import selected Markdown
 sections with `?raw` in `src/vanilla-lynx-skill.ts` and inline them during the

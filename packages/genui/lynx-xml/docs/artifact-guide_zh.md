@@ -15,8 +15,8 @@ const source = normalizeLynxXmlArtifact(modelOutput);
 `normalizeLynxXmlArtifact` 会从说明文字或 Markdown 代码块中提取产物；存在 `<lynx>` 根节点但缺少
 `<!doctype lynx>` 时，会补齐 doctype。找不到产物或产物结构契约不合法时抛出异常。
 它要求根节点采用 `<lynx engine-version="...">`，包含闭合的 `</lynx>`、恰好一个
-已闭合的 `<script thread="main">`，且没有 CDATA。Template 或 ScriptReuse 的
-中间产物应先转换，再规范化并校验最终产物。
+已闭合的 `<script thread="main">`，且没有 CDATA。ScriptReuse 的
+辅助逻辑应先组装，再规范化并校验；最终产物可以保留 Template UI 标签，由客户端解析。
 
 `assembleLynxXmlArtifact` 内部会提取中间产物，业务可以直接传入原始模型响应。
 提取函数是内部工具，不从包入口导出。
@@ -73,18 +73,19 @@ function transformModelOutput(source: string) {
 }
 ```
 
-这里的 `source` 是模型返回的完整中间产物，必须满足以下规则：
+这里的 `source` 是模型返回的完整模板产物，必须满足以下规则：
 
 - `<lynx>` 下恰好包含一个直接子节点 `<template>`，与普通 style 和 script 块
   同级。块顺序不限，主线程脚本必须恰好一个。
 - 只给事件、更新或清理需要引用的节点设置唯一 id。纯静态节点无需 id。
 - 渲染时恰好调用一次 `createFragment(page, pageId)`，将返回的 id 到节点映射
   保存在脚本作用域的 `nodes` 中，之后通过 `nodes["root"]` 等方式访问。该辅助
-  函数由转换器提供，模型不得声明或遮蔽它。
+  函数由客户端提供，模型不得声明或遮蔽它。
 
-转换会移除 template，并注入创建、追加初始元素树的 `createFragment`，返回的
-映射仅包含显式 id 节点。结果的 `text` 是用于渲染的完整 `.lynxml` 产物，
-`xmlFragment` 是模板中的原始 XML。
+组装会原样保留 template，不注入初始建树函数。客户端提供
+`createFragment(page, pageId)`，解析并追加初始根节点，返回的映射仅包含显式 id 节点。
+启用 ScriptReuse 时，公共生命周期会在业务 `render(ctx)` 前调用它。
+结果的 `text` 是保留 UI 标签的完整 `.lynxml` 产物，`xmlFragment` 是模板中的原始 XML。
 
 转换不执行 JavaScript，会保留源码顺序和非空文本内部的空白，拒绝重复 id，
 限制片段长度与嵌套深度。渲染仍由业务负责。
@@ -175,8 +176,8 @@ definePage({
 </lynx>
 ```
 
-这是中间契约，不能直接交给运行时。预览或交付前使用相同选项调用
-`assembleLynxXmlArtifact`，再规范化并校验转换后的产物。
+交付前使用相同选项调用 `assembleLynxXmlArtifact`，补齐公共生命周期，
+再规范化并校验。组装结果保留 template，由客户端解析。
 
 `definePage` 必须恰好一次出现在顶层，参数对象可包含同步的 `render(ctx, data)`、
 `update(ctx, patch)`、`destroy(ctx)`。未启用 Template 时必须提供 `render`，
@@ -218,6 +219,21 @@ Template 和 ScriptReuse 同时启用时，Prompt 使用更紧凑的 Vanilla Lyn
 实现，其体积不会按同等幅度减少。评估收益时固定 Bench 条件，只改变 ScriptReuse，
 比较输入/输出 token、生成时长、合法率和 Judge 结果；源码字符数不能替代模型
 服务返回的 token 用量和实际延迟。
+
+### 适配现有运行时
+
+Web Core 等不支持 template 解析的运行时，可在渲染边界转换组装产物：
+
+```ts
+import { compileLynxXmlFragment } from '@lynx-js/genui/lynx-xml';
+
+const runtimeSource = compileLynxXmlFragment(artifact).text;
+```
+
+此时不要再次开启 ScriptReuse，`artifact` 已包含公共生命周期。这个显式适配器
+会移除 template 并注入 Element PAPI 建树函数。历史记录、下载、发布地址和 Bench
+报告仍保留 `artifact`，不替换为 `runtimeSource`。Playground 也会在创建供现有原生
+运行时截图使用的 ZIP 前本地适配。
 
 ### 转换独立片段
 

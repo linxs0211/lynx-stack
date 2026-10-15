@@ -218,8 +218,9 @@ test.each(['generate', 'stream'] as const)(
       result = await stream.finalize();
     }
     expect(calls).toHaveLength(1);
-    expect(result.text).not.toContain('<template>');
-    expect(result.text).toContain('__CreateView(pageId)');
+    expect(result.text).toContain(`<template>${FRAGMENT}</template>`);
+    expect(result.text).not.toContain('function createFragment(');
+    expect(result.text).not.toContain('__CreateView(pageId)');
     expect(result.metadata).toEqual({
       modelOutput: INTERMEDIATE,
       xmlFragment: FRAGMENT,
@@ -289,7 +290,8 @@ test.each(['generate', 'stream'] as const)(
         expect(result.metadata.xmlFragment !== undefined).toBe(
           enableHtmlFragment,
         );
-        expect(result.text).not.toContain('<template>');
+        expect(result.text?.includes('<template>')).toBe(enableHtmlFragment);
+        expect(result.text).not.toContain('function createFragment(');
         expect(calls.at(-1)?.includes('Lynx StylePreset')).toBe(
           stylePreset === 'default',
         );

@@ -5,6 +5,7 @@ import { createElement, useEffect, useRef } from 'react';
 
 import '@lynx-js/web-elements/index.css';
 
+import { prepareLynxXmlRuntimeSource } from '../utils/lynxXmlRuntime.js';
 import { createLocalLynxXmlSourcePayload } from '../utils/renderUrl.js';
 
 interface LynxViewElement extends HTMLElement {
@@ -37,7 +38,8 @@ function callLatestOnLoad(
  * Mount a Lynx XML artifact directly in a Web LynxView.
  *
  * LynxView exposes a URL input, so generated in-memory XML is represented by
- * an XML-only Blob URL. No A2UI/OpenUI payload or render bridge is involved.
+ * an XML-only Blob URL. Retained templates are adapted locally for Web Core;
+ * the stored source and share/native URL retain their original UI tags.
  */
 export function LynxXmlView(props: LynxXmlViewProps) {
   const { className, onLoad, source, sourceUrl } = props;
@@ -49,13 +51,30 @@ export function LynxXmlView(props: LynxXmlViewProps) {
   useEffect(() => {
     let active = true;
     let removeLoadListener: (() => void) | undefined;
-    const localPayload = source === undefined
-      ? undefined
-      : createLocalLynxXmlSourcePayload(source, window.URL);
-    const resolvedSourceUrl = sourceUrl ?? localPayload?.sourceUrl;
+    const abort = new AbortController();
+    let localPayload:
+      | ReturnType<typeof createLocalLynxXmlSourcePayload>
+      | undefined;
 
-    if (resolvedSourceUrl) {
-      void ensureLynxWebRuntime().then(() => {
+    if (sourceUrl || source !== undefined) {
+      void (async () => {
+        let xml = source ?? '';
+        if (sourceUrl) {
+          const response = await window.fetch(sourceUrl, {
+            credentials: 'omit',
+            signal: abort.signal,
+          });
+          if (!response.ok) {
+            throw new Error(`Lynx XML source returned HTTP ${response.status}`);
+          }
+          xml = await response.text();
+        }
+        if (!active) return;
+        localPayload = createLocalLynxXmlSourcePayload(
+          prepareLynxXmlRuntimeSource(xml),
+          window.URL,
+        );
+        await ensureLynxWebRuntime();
         const lynxView = lynxViewRef.current;
         if (!active || !lynxView) return;
 
@@ -64,12 +83,15 @@ export function LynxXmlView(props: LynxXmlViewProps) {
         removeLoadListener = () => {
           lynxView.removeEventListener('load', handleLoad);
         };
-        lynxView.url = resolvedSourceUrl;
+        lynxView.url = localPayload.sourceUrl;
+      })().catch(error => {
+        if (active) console.error('Unable to preview Lynx XML:', error);
       });
     }
 
     return () => {
       active = false;
+      abort.abort();
       removeLoadListener?.();
       localPayload?.dispose();
     };

@@ -6,6 +6,13 @@ export const ALLOWED_CUSTOM_PROVIDER_BASE_URLS = [
   'https://api.openai.com/v1',
   'https://generativelanguage.googleapis.com/v1beta/openai',
   'https://openrouter.ai/api/v1',
+  // https://platform.kimi.com/docs/get-api-key
+  // https://platform.kimi.ai/docs/overview
+  'https://api.moonshot.cn/v1',
+  'https://api.moonshot.ai/v1',
+  // https://www.kimi.com/code/docs/#api-%E6%8E%A5%E5%85%A5
+  'https://api.kimi.com/coding/v1',
+  'https://api.kimi.ai/coding/v1',
 ] as const;
 
 // TypeSafe uses evaluation rather than the OpenAI language-model protocol.

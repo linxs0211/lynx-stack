@@ -91,6 +91,22 @@ describe('buildLynxXmlSystemPrompt', () => {
     })).toBe(LYNX_XML_SYSTEM_PROMPT);
   });
 
+  test.each([false, true])(
+    'keeps initial UI tags in the client contract (reuse=%s)',
+    enableScriptReuse => {
+      const prompt = buildLynxXmlSystemPrompt({
+        enableHtmlFragment: true,
+        enableScriptReuse,
+      });
+      expect(prompt).toContain(
+        'The final artifact preserves <template> and its UI tags',
+      );
+      expect(prompt).not.toContain('server removes <template>');
+      expect(prompt).not.toContain('server supplies createFragment');
+      expect(prompt).toContain('initial UI hierarchy in XML tags');
+    },
+  );
+
   test.each(PROMPT_MODES)(
     'preserves the upstream CSS property lists for %s',
     (_mode, options) => {
