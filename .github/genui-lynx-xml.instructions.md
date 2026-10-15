@@ -10,7 +10,11 @@ Expose shared Lynx XML utilities through `@lynx-js/genui/lynx-xml`. Keep
 component contracts in `src/component-catalog.ts`, exported as
 `LYNX_XML_COMPONENT_CATALOG`. Keep Template prompts and validation aligned
 with the explicit Web adapter, preserving compound tags such as `Button` in
-assembled source. Native clients implement those components and map their ids
+assembled source. Template generation selects matching defined components from
+ordinary UI requirements automatically. Compose primitives only where no catalog
+component covers the required semantics or behavior, including layout and
+uncovered content. Do not require component names in user prompts or let visual
+customization alone bypass a matching component. Native clients implement those components and map their ids
 to tappable roots. Button label, variant, and disabled are initial props;
 do not use raw Element attributes or root text replacement as a component
 prop update API. Keep document

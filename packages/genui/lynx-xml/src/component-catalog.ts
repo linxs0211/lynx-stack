@@ -95,7 +95,12 @@ export function expandButton(
 export function componentInstructions(): string {
   const button = LYNX_XML_COMPONENT_CATALOG.Button;
   return `Lynx XML component contract:
-- Use the case-sensitive, self-closing <Button> component for button controls instead of manually composing button UI from view/text. Keep <Button> in the delivered template for the client parser.
+- Component selection priority: first match each requested UI control to the defined component catalog (${
+    Object.keys(LYNX_XML_COMPONENT_CATALOG).join(', ')
+  }), using its meaning, supported props, and events. Select matching components automatically from the user's product requirements, even when the user does not name any components or tags.
+- When a defined component can express the required control, use that component and retain its tag in the template. Apply its declared variants, class, and style for visual customization; a different visual design alone is not a reason to reimplement it with primitive elements.
+- Only compose a control from supported primitive Lynx elements when no defined component can express its required meaning or behavior. Primitive elements remain available for page layout and uncovered content. Never invent an undefined component name or unsupported component props to fill a gap.
+- For a labeled action control covered by Button's props and tap event, use the case-sensitive, self-closing <Button> component. Actions such as submitting, buying, adding to cart, confirming, or resetting use Button automatically. Keep <Button> in the delivered template for the client parser.
 - Button props: label is a required non-empty literal string; variant is ${
     button.props.variant.enum.join(' | ')
   } (default ${button.props.variant.default}); disabled is a literal "true" or "false" (default ${button.props.disabled.default}). Button has no children. Example: <Button id="submit" label="Submit" variant="primary" />.

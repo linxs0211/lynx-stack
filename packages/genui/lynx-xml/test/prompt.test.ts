@@ -91,6 +91,24 @@ describe('buildLynxXmlSystemPrompt', () => {
         Boolean(options.enableHtmlFragment),
       );
       if (options.enableHtmlFragment) {
+        expect(prompt).toContain(
+          'first match each requested UI control to the defined component catalog (Button)',
+        );
+        expect(prompt).toContain(
+          'even when the user does not name any components or tags',
+        );
+        expect(prompt).toContain(
+          'a different visual design alone is not a reason to reimplement it',
+        );
+        expect(prompt).toContain(
+          'Only compose a control from supported primitive Lynx elements when no defined component can express its required meaning or behavior',
+        );
+        expect(prompt).toContain(
+          'Never invent an undefined component name or unsupported component props',
+        );
+        expect(prompt).toContain(
+          'adding to cart, confirming, or resetting use Button automatically',
+        );
         expect(prompt).toContain('self-closing <Button>');
         expect(prompt).toContain('variant is primary | secondary | tertiary');
         expect(prompt).toContain(

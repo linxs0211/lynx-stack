@@ -16,7 +16,11 @@ without template parsing; do not publish or persist that adapted preview source.
 Keep retained compound component contracts in `src/component-catalog.ts` and
 expose them through `LYNX_XML_COMPONENT_CATALOG`. Template prompts, validation,
 and the explicit Web adapter must agree on names, literal props, defaults,
-children, and events. Preserve component tags in assembled artifacts; map a
+children, and events. Template generation must first select defined components
+from ordinary product requirements, without requiring users to name components.
+Fall back to primitive composition only for controls not covered by the catalog's
+semantics or supported behavior; layout and uncovered content may use primitives.
+Styling differences use supported variants/classes/styles. Preserve component tags in assembled artifacts; map a
 component id to its root in the client node map. Button has an initial label,
 variant, and disabled state with no children. Do not imply dynamic component
 prop support through raw Element attributes or `ctx.setText` on its root.

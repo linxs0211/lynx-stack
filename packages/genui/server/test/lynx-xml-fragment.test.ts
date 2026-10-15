@@ -345,6 +345,11 @@ test.each(['generate', 'stream'] as const)(
   '%s isolates all ScriptReuse/Template/StylePreset variants and retains raw evidence',
   async mode => {
     const service = new LynxXmlAgentService();
+    const messages = [{
+      role: 'user' as const,
+      content:
+        'Create a product detail page with Add to cart and Buy now actions.',
+    }];
     for (const enableHtmlFragment of [false, true]) {
       for (const stylePreset of [false, 'default'] as const) {
         for (const enableScriptReuse of [false, true, false, true]) {
@@ -362,9 +367,12 @@ test.each(['generate', 'stream'] as const)(
           };
           let result;
           if (mode === 'generate') {
-            result = await service.generateRaw([], options);
+            result = await service.generateRaw(messages, options);
           } else {
-            const stream = await service.streamAsAsyncIterable([], options);
+            const stream = await service.streamAsAsyncIterable(
+              messages,
+              options,
+            );
             let raw = '';
             for await (const chunk of stream.textStream) raw += chunk;
             expect(raw).toBe(override);
@@ -380,6 +388,15 @@ test.each(['generate', 'stream'] as const)(
           expect(calls.at(-1)?.includes('ScriptReuse is enabled')).toBe(
             enableScriptReuse,
           );
+          expect(calls.at(-1)).toContain(messages[0]!.content);
+          expect(calls.at(-1)?.includes('Component selection priority:')).toBe(
+            enableHtmlFragment,
+          );
+          expect(
+            calls.at(-1)?.includes(
+              'Only compose a control from supported primitive Lynx elements when no defined component',
+            ),
+          ).toBe(enableHtmlFragment);
           expect(result.usage).toMatchObject(USAGE);
         }
       }

@@ -6,6 +6,24 @@ elements. The exported `LYNX_XML_COMPONENT_CATALOG` in
 The generation prompt uses this contract, and assembly validates it while
 preserving the original component tags.
 
+## Selection priority
+
+Template generation first matches UI requirements to the defined component
+catalog by meaning, supported props, and events. When a component covers the
+requested control, the model uses it automatically, even if the user only
+describes a product page and never mentions component names. Styling differences
+use declared variants, classes, and styles.
+
+Only controls whose required meaning or behavior cannot be expressed by the
+defined components fall back to supported primitive Lynx elements. Page layout
+and uncovered content can also use primitives. Fallback does not permit invented
+component tags or unsupported component props. This selection policy is part of
+the system prompt; users do not need to repeat it in each request.
+
+For example, a product page's "Add to cart" and "Buy now" actions use `Button`.
+Until components for product summaries or price displays are defined, those
+parts use primitive `view` and `text` elements.
+
 ## Button
 
 ```xml
@@ -58,12 +76,15 @@ or automatically register native components.
 In Playground Create, enable **Template**. **ScriptReuse** may also be enabled.
 Use this prompt:
 
-> Generate a Button component test page. Keep Button tags in the template:
-> a primary Button labeled "Add 1", a secondary Button labeled "Reset", and
-> a disabled Button labeled "Unavailable". Show a separate counter initially
-> set to zero; Add 1 increments it and Reset returns it to zero. Bind tap
-> handlers by id. Do not expand Button into view/text in the XML.
+> Create a product detail page for a coffee maker. Show its name, price, and
+> description, with "Add to cart" and "Buy now" actions. Each action should
+> display its corresponding confirmation message when tapped.
 
-The **Button Component** example provides the same interactions without a model
+No component names are needed in this request. The generated template should
+use `<Button>` for both actions, with primitive layout and product content
+where the catalog has no matching component. This is a generation instruction,
+not a guarantee of model compliance; inspect the result when evaluating a model.
+
+The **Button Component** example provides counter interactions without a model
 call. Check Original or Transformed for retained `<Button>` tags; the native
 XML URL serves the assembled artifact containing those tags.
