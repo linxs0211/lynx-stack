@@ -72,6 +72,8 @@ at the package API level.
 
 ## Documentation
 
+- [Components](./docs/components.md): the retained `Button` contract, client
+  parsing responsibilities, and a generation prompt to try.
 - [Overview and architecture](./docs/overview.md): responsibilities, generation
   modes, and the end-to-end pipeline.
 - [Artifacts and validation](./docs/artifact-guide.md): extraction, normalization, validation, Template,

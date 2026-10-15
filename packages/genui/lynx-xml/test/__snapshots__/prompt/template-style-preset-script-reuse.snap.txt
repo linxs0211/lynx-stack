@@ -20,6 +20,14 @@ Template mode is enabled for this request (this output contract overrides the im
 - Generate the entire document in one response: one <template> containing the initial XML element fragment directly inside <lynx>, alongside CSS and one main-thread script in their normal source blocks. Prefer placing the template first, but block order is not significant. Never omit the template, even when conversation history contains older script-only .lynxml artifacts. The final artifact preserves <template> and its UI tags; the consuming client parses and creates the initial tree. Keep the initial UI hierarchy in XML tags rather than expanding it into Element PAPI calls.
 - Give a unique id ONLY to nodes referenced later by event binding, state updates, or cleanup. Omit id on purely static nodes; do not assign ids to every node. Use well-formed XML, literal attributes and XML entities in the template. Keep style, script, lynx, and page elements outside the fragment. Prefer literal text directly inside <text>. An explicit <raw-text> leaf may use text content or a text attribute, never both; put styling, event handlers, and update ids on its parent <text>. Do not use interpolation, loops, conditional directives, or inline event-handler attributes; implement dynamic behavior in JavaScript.
 
+Lynx XML component contract:
+- Use the case-sensitive, self-closing <Button> component for button controls instead of manually composing button UI from view/text. Keep <Button> in the delivered template for the client parser.
+- Button props: label is a required non-empty literal string; variant is primary | secondary | tertiary (default primary); disabled is a literal "true" or "false" (default false). Button has no children. Example: <Button id="submit" label="Submit" variant="primary" />.
+- Common Button attributes: id, class, style, data-* and accessibility-*. Do not invent component names, props, or inline event attributes. XML entity escaping also applies to label.
+- A Button id resolves to its root control. Bind tap through the existing node event API, such as ctx.on(ctx.nodes.submit, "tap", handler) in ScriptReuse mode. Disabled buttons do not receive taps.
+- label, variant and disabled are initial component props in this version. Update separate text nodes for counters/status; never pass a Button root to ctx.setText or mutate its component props through Element attributes. class/style apply to the root control.
+- The client owns Button rendering and default visuals. The Web adapter uses a styled view with a text label; do not emit its implementation or internal children into the template.
+
 ## Imported Vanilla Lynx guidance
 
 The following selected guidance is bundled from @lynx-js/skill-vanilla-lynx. It is

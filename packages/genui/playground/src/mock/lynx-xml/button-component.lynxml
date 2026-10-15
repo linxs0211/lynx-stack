@@ -1,0 +1,83 @@
+<!doctype lynx>
+<lynx engine-version="4.2">
+<template>
+  <scroll-view class="button-page" scroll-orientation="vertical">
+    <text class="eyebrow">LYNX XML COMPONENTS</text>
+    <text class="title">Button 测试</text>
+    <text class="description">XML 保留 Button 标签，客户端负责渲染组件。</text>
+    <view class="button-card">
+      <text class="description">当前计数</text>
+      <text id="count" class="button-count">0</text>
+      <Button id="increment" label="点击 +1" variant="primary" />
+      <Button id="reset" label="重置" variant="secondary" />
+      <Button id="disabled" label="暂不可用" disabled="true" />
+      <Button id="details" label="查看组件说明" variant="tertiary" />
+      <text id="status" class="description">点击主按钮试试</text>
+    </view>
+  </scroll-view>
+</template>
+<style>
+.button-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  padding: 28px 24px;
+  background-color: #f3f0e8;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: #687367;
+}
+.title {
+  margin-top: 12px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #233c32;
+}
+.description {
+  font-size: 14px;
+  line-height: 22px;
+  white-space: normal;
+  color: #687367;
+}
+.button-card {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 24px;
+  background-color: #ffffff;
+}
+.button-count {
+  font-size: 64px;
+  font-weight: 700;
+  color: #233c32;
+}
+</style>
+<script thread="main">
+let count = 0;
+
+definePage({
+  render(ctx) {
+    ctx.on(ctx.nodes.increment, "tap", () => {
+      count += 1;
+      ctx.setText(ctx.nodes.count, count);
+    });
+    ctx.on(ctx.nodes.reset, "tap", () => {
+      count = 0;
+      ctx.setText(ctx.nodes.count, count);
+    });
+    ctx.on(ctx.nodes.disabled, "tap", () => {
+      ctx.setText(ctx.nodes.status, "禁用按钮不应触发此事件");
+    });
+    ctx.on(ctx.nodes.details, "tap", () => {
+      ctx.setText(ctx.nodes.status, "Button: label / variant / disabled，点击事件使用 id 绑定");
+    });
+  }
+});
+</script>
+</lynx>

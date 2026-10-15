@@ -66,6 +66,7 @@ const artifact = normalizeLynxXmlArtifact(text);
 
 ## 文档目录
 
+- [组件标准](./docs/components.md)：保留的 `Button` 标签、属性、事件、客户端解析契约和测试 Prompt。
 - [概览与架构](./docs/overview_zh.md)：职责边界、生成模式和完整处理流程。
 - [产物与校验](./docs/artifact-guide_zh.md)：产物提取、规范化与校验、Template、ScriptReuse、
   StylePreset 和片段转换。

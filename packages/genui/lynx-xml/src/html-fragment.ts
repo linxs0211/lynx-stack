@@ -4,6 +4,8 @@
 
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 
+import { expandButton } from './component-catalog.js';
+
 const FRAGMENT_ROOT = 'genui-fragment';
 const MAX_XML_FRAGMENT_DEPTH = 64;
 export const MAX_XML_FRAGMENT_LENGTH = 100_000;
@@ -201,6 +203,33 @@ function appendParsedNode(
     throw new Error(
       `XML fragment must not exceed ${MAX_XML_FRAGMENT_DEPTH} levels of element nesting`,
     );
+  }
+  if (tagName === 'Button') {
+    if (
+      !Array.isArray(children)
+      || (children as unknown[]).some(child =>
+        !child || typeof child !== 'object'
+        || Object.keys(child).some(key => key !== TEXT_NODE_NAME)
+        || String((child as OrderedXmlNode)[TEXT_NODE_NAME]).trim()
+      )
+    ) {
+      throw new Error(
+        'Button uses the label attribute and must not have children',
+      );
+    }
+    const attributes = parsedNode[ATTRIBUTE_NODE_NAME];
+    appendParsedNode(
+      expandButton(
+        attributes && typeof attributes === 'object'
+          ? attributes as Record<string, string>
+          : {},
+      ),
+      parent,
+      parentTagName,
+      state,
+      depth,
+    );
+    return;
   }
   if (!/^[a-z][a-z0-9-]*$/u.test(tagName)) {
     throw new Error(`Unsupported XML element: ${tagName}`);

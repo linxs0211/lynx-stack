@@ -13,6 +13,14 @@ Keep ScriptReuse lifecycle assembly and StylePreset CSS independent of this
 boundary. Use `compileLynxXmlFragment` only as an explicit adapter for runtimes
 without template parsing; do not publish or persist that adapted preview source.
 
+Keep retained compound component contracts in `src/component-catalog.ts` and
+expose them through `LYNX_XML_COMPONENT_CATALOG`. Template prompts, validation,
+and the explicit Web adapter must agree on names, literal props, defaults,
+children, and events. Preserve component tags in assembled artifacts; map a
+component id to its root in the client node map. Button has an initial label,
+variant, and disabled state with no children. Do not imply dynamic component
+prop support through raw Element attributes or `ctx.setText` on its root.
+
 Use the pinned direct dependency on `@lynx-js/skill-vanilla-lynx` as the source
 of truth for shared Vanilla Lynx runtime guidance. Import selected Markdown
 sections with `?raw` in `src/vanilla-lynx-skill.ts` and inline them during the

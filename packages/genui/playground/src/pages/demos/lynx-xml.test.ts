@@ -15,6 +15,7 @@ import { prepareLynxXmlRuntimeSource } from '../../utils/lynxXmlRuntime.js';
 import { PROTOCOLS } from '../../utils/protocol.js';
 
 const FLEX_LAYOUT_CLASSES: Readonly<Record<string, readonly string[]>> = {
+  'button-component': ['genui-page', 'button-page', 'button-card'],
   'script-reuse-counter': ['genui-page', 'flex'],
   'style-preset-counter': ['flex'],
   'template-counter': [
@@ -133,6 +134,7 @@ describe('Lynx XML showcase', () => {
       'template-counter',
       'style-preset-counter',
       'script-reuse-counter',
+      'button-component',
     ]);
     for (const scenario of LYNX_XML_SCENARIOS) {
       expect(scenario.source).toMatch(/^<!doctype lynx>/u);
@@ -197,6 +199,25 @@ describe('Lynx XML showcase', () => {
         ),
       );
     }
+  });
+
+  test('keeps Button components in the editor and delivered source, adapting only for Web', () => {
+    const scenario = LYNX_XML_DEMOS_PAGE_SOURCE.findScenario(
+      'button-component',
+    )!;
+    const original = LYNX_XML_DEMOS_PAGE_SOURCE.getEditorValue(scenario);
+    const edited = LYNX_XML_DEMOS_PAGE_SOURCE.commit({
+      scenario,
+      editorValue: original.replace('label="点击 +1"', 'label="增加"'),
+      editorEdited: true,
+    });
+    if (!('value' in edited)) throw new Error(edited.error);
+    const { source, sourcePath } = edited.value.previewInput;
+    expect(sourcePath).toBeUndefined();
+    expect(source).toContain('<Button id="increment" label="增加"');
+    expect(source).not.toContain('genui-button');
+    expect(prepareLynxXmlRuntimeSource(source)).toContain('genui-button');
+    expect(prepareLynxXmlRuntimeSource(source)).not.toContain('<Button');
   });
 
   test('enables HTML language support in the Lynx XML editor', () => {

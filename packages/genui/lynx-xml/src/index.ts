@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 export { normalizeLynxXmlArtifact } from './output.js';
+export { LYNX_XML_COMPONENT_CATALOG } from './component-catalog.js';
 export {
   buildLynxXmlSystemPrompt,
   LYNX_XML_ENGINE_VERSION,

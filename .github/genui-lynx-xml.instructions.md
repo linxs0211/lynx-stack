@@ -6,7 +6,14 @@ Keep provider-neutral prompts, artifact extraction, document validation, and det
 `packages/genui/lynx-xml`; keep model providers, Agent wiring, streaming, and
 request options in GenUI Server.
 
-Expose shared Lynx XML utilities through `@lynx-js/genui/lynx-xml`. Keep document
+Expose shared Lynx XML utilities through `@lynx-js/genui/lynx-xml`. Keep
+component contracts in `src/component-catalog.ts`, exported as
+`LYNX_XML_COMPONENT_CATALOG`. Keep Template prompts and validation aligned
+with the explicit Web adapter, preserving compound tags such as `Button` in
+assembled source. Native clients implement those components and map their ids
+to tappable roots. Button label, variant, and disabled are initial props;
+do not use raw Element attributes or root text replacement as a component
+prop update API. Keep document
 extraction and normalization in `lynx-xml/src/output.ts`, expose only
 `normalizeLynxXmlArtifact` for document validation, and keep extraction internal
 to normalization and assembly. Server passes original model responses to

@@ -9,6 +9,7 @@ import type { LynxXmlStylePreset } from '@lynx-js/genui/lynx-xml';
 
 import type { DemosListSource } from './DemosList.js';
 import type { DemosPageSource } from './type.js';
+import buttonComponentSource from '../../mock/lynx-xml/button-component.lynxml?raw';
 import counterSource from '../../mock/lynx-xml/counter.lynxml?raw';
 import productCardSource from '../../mock/lynx-xml/product-card.lynxml?raw';
 import scriptReuseCounterSource from '../../mock/lynx-xml/script-reuse-counter.lynxml?raw';
@@ -125,6 +126,20 @@ export const LYNX_XML_SCENARIOS: readonly LynxXmlScenario[] = [
     templateSource: scriptReuseCounterSource,
     enableScriptReuse: true,
     stylePreset: 'default',
+  },
+  {
+    id: 'button-component',
+    title: 'Button Component',
+    description:
+      'Retains compound Button tags for client parsing, with three variants, disabled state, and counter interactions.',
+    badge: 'Component',
+    sourcePath: 'demos/lynx-xml/button-component.lynxml',
+    source: assembleLynxXmlArtifact(buttonComponentSource, {
+      enableHtmlFragment: true,
+      enableScriptReuse: true,
+    }).text,
+    templateSource: buttonComponentSource,
+    enableScriptReuse: true,
   },
 ];
 

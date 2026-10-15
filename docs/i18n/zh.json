@@ -410,6 +410,7 @@
   "Component schema discovered from an interface annotated with `@a2uiCatalog`.": "从带有 `@a2uiCatalog` 注解的接口中发现的组件 schema。",
   "Component type name (e.g. \"BarChart\", \"Query\").": "组件类型名称（例如 \"BarChart\"、\"Query\"）。",
   "Components the renderer is allowed to instantiate. Each item is either\na bare component (name read from `displayName ?? name`) or a tuple\n`[component, manifest]` where the manifest is the JSON the extractor\nemits at `dist/catalog/<Name>/catalog.json`.": "renderer 允许实例化的组件。每一项要么是\n一个裸组件（名称从 `displayName ?? name` 读取），要么是一个元组\n`[component, manifest]`，其中 manifest 是 extractor 在\n`dist/catalog/<Name>/catalog.json` 处生成的 JSON。",
+  "Compound component contracts for retained Lynx XML tags and client parsers.": "供保留的 Lynx XML 标签和客户端解析器使用的复合组件契约。",
   "Compress if it starts with /foo": "以 /foo 开头时进行压缩",
   "Config overview": "配置概览",
   "Configuration interface for DefaultGesture.\nDefault gesture is a basic gesture handler.": "DefaultGesture 的配置接口。\nDefault gesture 是一种基础手势处理器。",

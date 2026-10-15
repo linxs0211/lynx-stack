@@ -2,6 +2,7 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
+import { componentInstructions } from './component-catalog.js';
 import { scriptReuseInstructions } from './script-reuse.js';
 import {
   LYNX_XML_STYLE_PRESET_INSTRUCTIONS,
@@ -125,7 +126,7 @@ ${
             && !line.startsWith('- Write only custom CSS'))
         ).join('\n') + '\n\n'
       : ''
-  }${guidance}
+  }${enableHtmlFragment ? componentInstructions() + '\n\n' : ''}${guidance}
 
 ${enableScriptReuse ? scriptReuseInstructions(enableHtmlFragment) : ''}
 

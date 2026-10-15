@@ -23,6 +23,14 @@ Template mode is enabled for this request (this output contract overrides the im
 - createFragment creates and appends the initial roots to page and returns their id-to-node map. Do not recreate or append the initial roots yourself. Bind events and apply initial state after the call. Use Element PAPI for subsequent dynamic updates and new nodes.
 - Write all CSS, state, event handlers, lifecycle registration, and cleanup in the same response. Do not request conversion, wait for bindings, or output placeholders. The server assembles enabled script and style helpers without replacing the template or making another model request.
 
+Lynx XML component contract:
+- Use the case-sensitive, self-closing <Button> component for button controls instead of manually composing button UI from view/text. Keep <Button> in the delivered template for the client parser.
+- Button props: label is a required non-empty literal string; variant is primary | secondary | tertiary (default primary); disabled is a literal "true" or "false" (default false). Button has no children. Example: <Button id="submit" label="Submit" variant="primary" />.
+- Common Button attributes: id, class, style, data-* and accessibility-*. Do not invent component names, props, or inline event attributes. XML entity escaping also applies to label.
+- A Button id resolves to its root control. Bind tap through the existing node event API, such as ctx.on(ctx.nodes.submit, "tap", handler) in ScriptReuse mode. Disabled buttons do not receive taps.
+- label, variant and disabled are initial component props in this version. Update separate text nodes for counters/status; never pass a Button root to ctx.setText or mutate its component props through Element attributes. class/style apply to the root control.
+- The client owns Button rendering and default visuals. The Web adapter uses a styled view with a text label; do not emit its implementation or internal children into the template.
+
 ## Imported Vanilla Lynx guidance
 
 The following selected guidance is bundled from @lynx-js/skill-vanilla-lynx. It is

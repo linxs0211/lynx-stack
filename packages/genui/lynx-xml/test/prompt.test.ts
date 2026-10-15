@@ -83,6 +83,24 @@ describe('buildLynxXmlSystemPrompt', () => {
     );
   });
 
+  test.each(PROMPT_MODES)(
+    'exposes the Button component contract only for Template in %s',
+    (_mode, options) => {
+      const prompt = buildLynxXmlSystemPrompt(options);
+      expect(prompt.includes('Lynx XML component contract:')).toBe(
+        Boolean(options.enableHtmlFragment),
+      );
+      if (options.enableHtmlFragment) {
+        expect(prompt).toContain('self-closing <Button>');
+        expect(prompt).toContain('variant is primary | secondary | tertiary');
+        expect(prompt).toContain(
+          'label is a required non-empty literal string',
+        );
+        expect(prompt).toContain('disabled are initial component props');
+      }
+    },
+  );
+
   test('treats explicitly disabled features as the default mode', () => {
     expect(buildLynxXmlSystemPrompt({
       enableHtmlFragment: false,
