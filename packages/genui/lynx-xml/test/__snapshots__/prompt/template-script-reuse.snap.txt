@@ -36,8 +36,9 @@ Lynx XML component contract:
 The following selected guidance is bundled from @lynx-js/skill-vanilla-lynx. It is
 the source of truth for Element PAPI, lifecycle, local events,
 and Lynx styling behavior unless the later Lynx XML adaptation contract
-explicitly overrides it. Code examples are omitted to keep the generation
-prompt focused; plain-text constraint lists and surrounding rules are preserved.
+explicitly overrides it. Full code examples are omitted to keep the generation
+prompt focused; engine lifecycle signatures, plain-text constraint lists,
+and surrounding rules are preserved.
 
 ### SKILL.md
 

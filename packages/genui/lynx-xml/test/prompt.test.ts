@@ -83,6 +83,30 @@ describe('buildLynxXmlSystemPrompt', () => {
     );
   });
 
+  test.each([false, true])(
+    'retains engine lifecycle APIs from the pinned skill (template=%s)',
+    enableHtmlFragment => {
+      const prompt = buildLynxXmlSystemPrompt({ enableHtmlFragment });
+      expect(prompt).toContain('const engine = lynx.getEngine();');
+      expect(prompt).toContain(
+        'engine.addEventListener(renderPageEventName, onRenderPage);',
+      );
+      expect(prompt).toContain(
+        'engine.addEventListener(updatePageEventName, onUpdatePage);',
+      );
+      expect(prompt).toContain(
+        'engine.addEventListener(destroyLifetimeEventName, cleanupEngineLifecycle);',
+      );
+      expect(prompt).toContain(
+        'engine.removeEventListener(renderPageEventName, onRenderPage);',
+      );
+      expect(prompt).not.toContain('function renderPage(data)');
+      expect(prompt).not.toContain('globalThis.processData');
+      expect(prompt).not.toContain('cleanupBackgroundBridge');
+      expect(prompt).not.toContain('updateDataFromMainThreadEventName');
+    },
+  );
+
   test.each(PROMPT_MODES)(
     'exposes the Button component contract only for Template in %s',
     (_mode, options) => {

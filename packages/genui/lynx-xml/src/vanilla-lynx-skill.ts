@@ -106,7 +106,10 @@ function buildSkillGuidance(
         sectionName,
         selection.file,
       );
-      section = stripFencedExamples(section);
+      section = stripFencedExamples(
+        section,
+        selection.file === 'references/main-thread.md',
+      );
       if (selection.file !== 'references/style.md') {
         section = keepMainThreadGuidance(section);
       }
@@ -138,8 +141,9 @@ function buildSkillGuidance(
 The following selected guidance is bundled from ${SKILL_PACKAGE_NAME}. It is
 the source of truth for Element PAPI, lifecycle, local events,
 and Lynx styling behavior unless the later Lynx XML adaptation contract
-explicitly overrides it. Code examples are omitted to keep the generation
-prompt focused; plain-text constraint lists and surrounding rules are preserved.
+explicitly overrides it. Full code examples are omitted to keep the generation
+prompt focused; engine lifecycle signatures, plain-text constraint lists,
+and surrounding rules are preserved.
 
 ${references.join('\n\n')}
 `.trim();
@@ -244,13 +248,23 @@ function normalizeMarkdown(markdown: string): string {
   return markdown.replace(/\r\n?/gu, '\n').trim();
 }
 
-function stripFencedExamples(markdown: string): string {
+function stripFencedExamples(
+  markdown: string,
+  keepEngineSignatures = false,
+): string {
   return markdown
     .replace(
       /^```([^\n]*)\n([\s\S]*?)^```[ \t]*$/gmu,
-      (_match, language: string, content: string) =>
+      (_match, language: string, content: string) => {
         // The skill uses text fences for normative CSS property lists.
-        language.trim() === 'text' ? content.trimEnd() : '',
+        if (language.trim() === 'text') return content.trimEnd();
+        if (!keepEngineSignatures) return '';
+        return (content.match(
+          /const (?:engine|(?:renderPage|updatePage|destroyLifetime)EventName) = [^;]+;|engine\.(?:addEventListener|removeEventListener)\([\s\S]*?\);/gu,
+        ) ?? []).filter(statement => !/background/iu.test(statement)).join(
+          '\n',
+        );
+      },
     )
     .replace(/\n{3,}/gu, '\n\n')
     .trim();

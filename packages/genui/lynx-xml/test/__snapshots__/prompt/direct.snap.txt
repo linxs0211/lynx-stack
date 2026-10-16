@@ -21,8 +21,9 @@ GenUI output requirements:
 The following selected guidance is bundled from @lynx-js/skill-vanilla-lynx. It is
 the source of truth for Element PAPI, lifecycle, local events,
 and Lynx styling behavior unless the later Lynx XML adaptation contract
-explicitly overrides it. Code examples are omitted to keep the generation
-prompt focused; plain-text constraint lists and surrounding rules are preserved.
+explicitly overrides it. Full code examples are omitted to keep the generation
+prompt focused; engine lifecycle signatures, plain-text constraint lists,
+and surrounding rules are preserved.
 
 ### SKILL.md
 
@@ -205,7 +206,14 @@ Use the engine environment returned from `lynx.getEngine()` for the initial `__R
 
 The render and update examples below share this module-scope setup:
 
+const renderPageEventName = "__RenderPage";
+const updatePageEventName = "__UpdatePage";
+const destroyLifetimeEventName = "__DestroyLifetime";
+const engine = lynx.getEngine();
+
 The engine dispatches `__RenderPage` with the initial payload. Process that payload and create the initial Element PAPI tree in `renderPage`. The handler may ignore its payload when the implementation does not need engine-provided data. Do not call `__FlushElementTree()` solely for this initial render; rely on the SDK default flush.
+
+engine.addEventListener(renderPageEventName, onRenderPage);
 
 #### Update
 
@@ -215,9 +223,19 @@ Every update after the initial render mutates the existing tree on the main thre
 
 The engine dispatches `__UpdatePage` with later update payloads. Process the payload, apply the UI mutation, and call `__FlushElementTree()`. The handler may remain a placeholder when the page intentionally does not consume engine-driven updates.
 
+engine.addEventListener(updatePageEventName, onUpdatePage);
+
 #### Lifecycle Cleanup
 
 The engine dispatches `__DestroyLifetime` when the LynxView is torn down. Remove the render and update listeners, remove Element PAPI node listeners, and release retained node references.
+
+engine.removeEventListener(renderPageEventName, onRenderPage);
+engine.removeEventListener(updatePageEventName, onUpdatePage);
+engine.removeEventListener(
+    destroyLifetimeEventName,
+    cleanupEngineLifecycle,
+  );
+engine.addEventListener(destroyLifetimeEventName, cleanupEngineLifecycle);
 
 ### references/event.md
 

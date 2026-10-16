@@ -30,6 +30,10 @@ of truth for shared Vanilla Lynx runtime guidance. Import selected Markdown
 sections with `?raw` in `src/vanilla-lynx-skill.ts` and inline them during the
 Rslib build. Do not read skill files from the filesystem at runtime, publish
 separate Markdown assets, or copy their shared prose into `src/prompt.ts`.
+When compacting fenced examples, retain the pinned engine acquisition and
+addEventListener/removeEventListener call signatures for non-ScriptReuse modes.
+Removing every lifecycle example leaves event names without an API binding
+contract and can cause generated scripts to invent EventEmitter-style methods.
 When adding a selected reference, update the matching Rslib and Rstest raw-asset
 rules, keep the skill package in Rstest's `output.bundleDependencies`, and add a
 composition test.
